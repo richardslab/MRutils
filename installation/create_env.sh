@@ -1,19 +1,19 @@
 #!/bin/bash
 
-ENV=vitaminD_covid_MR2
+ENV=vitaminD_test
 set +eu \
   && PS1=dummy \
   && . $(conda info --base)/etc/profile.d/conda.sh \
-  && conda activate base;
+  && conda activate base \
+  && conda install -y mamba
+
 set -eu;
 
-
-mamba create --yes \
+conda env remove ${ENV} || echo "couldn't remove environment ${ENV}"
+conda create -y -n ${ENV} 
+mamba env update \
 	--name ${ENV} \
-	--channel bioconda \
-	--channel conda-forge \
-	--channel r \
-	--file requirements.txt
+	--file installation/environment.yaml
 
 conda activate ${ENV}
 
