@@ -5,7 +5,7 @@ set +eu \
   && PS1=dummy \
   && . $(conda info --base)/etc/profile.d/conda.sh \
   && conda activate base \
-  && conda install -y mamba
+  && conda install -y -c conda-forge mamba 
 
 set -eu;
 
