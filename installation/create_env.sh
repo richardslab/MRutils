@@ -4,7 +4,6 @@
 ENV=vitaminD_MR
 set +eu \
   && PS1=dummy \
-  && conda init \
   && . $(conda info --base)/etc/profile.d/conda.sh \
   && conda activate base \
   && conda install -y -c conda-forge mamba 
@@ -26,5 +25,5 @@ conda activate ${ENV}
 ## run post-conda steps
 echo RUNNING post-conda steps
 
-R < post_conda_steps.R
+R < installation/post_conda_steps.R
 

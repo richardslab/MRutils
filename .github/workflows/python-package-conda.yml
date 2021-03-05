@@ -24,7 +24,7 @@ jobs:
           printenv | sort
       - shell: bash -l {0}
         run: |
-          R -e 'library(twosampleMR); library(LDlinkr);'
+          R -e 'library(TwoSampleMR); library(LDlinkr);'
       - shell: bash -l {0}
         run: |
           mamba install -c conda-forge r-lintr
