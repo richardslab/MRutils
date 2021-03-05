@@ -1,10 +1,10 @@
-name: Python Package using Conda
+name: R and Python Package using Conda and mamba
 
 on: [push]
 
 jobs:
-  example-6:
-    name: Ex6 Mamba
+  testStepsAndLint:
+    name: Build Environment using Mamba
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v2
@@ -24,5 +24,8 @@ jobs:
           printenv | sort
       - shell: bash -l {0}
         run: |
+          R -e 'library(twosampleMR); library(LDlinkr);'
+      - shell: bash -l {0}
+        run: |
           mamba install -c conda-forge r-lintr
-          R -e 'library(lintr); lint_dir("scripts")'
+          R -e 'library(lintr); options(warn=1); lint_dir("scripts/")'
