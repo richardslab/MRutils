@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 ENV=vitaminD_test
 set +eu \
   && PS1=dummy \
@@ -11,13 +12,19 @@ set -eu;
 
 conda env remove ${ENV} || echo "couldn't remove environment ${ENV}"
 conda create -y -n ${ENV} 
+
+set +eu
 mamba env update \
 	--name ${ENV} \
 	--file installation/environment.yaml
+set -eu
+
+echo CREATED the environment ${ENV}
 
 conda activate ${ENV}
 
 ## run post-conda steps
+echo RUNNING post-conda steps
 
 R < post_conda_steps.R
 
