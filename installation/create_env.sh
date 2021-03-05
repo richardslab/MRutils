@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 ENV=vitaminD_test
 set +eu \
