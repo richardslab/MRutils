@@ -4,7 +4,7 @@
 ENV=vitaminD_test
 set +eu \
   && PS1=dummy \
-  && conda init
+  && conda init \
   && . $(conda info --base)/etc/profile.d/conda.sh \
   && conda activate base \
   && conda install -y -c conda-forge mamba 
