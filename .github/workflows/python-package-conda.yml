@@ -17,15 +17,18 @@ jobs:
           environment-file: installation/environment.yaml
       - shell: bash -l {0}
         run: |
-          conda info
-          conda list
+          conda activate VitaminD_MR
+          conda info 
+          conda list 
           conda config --show-sources
           conda config --show
           printenv | sort
       - shell: bash -l {0}
         run: |
+          conda activate VitaminD_MR
           R -e 'library(TwoSampleMR); library(LDlinkr);'
       - shell: bash -l {0}
         run: |
+          conda activate VitaminD_MR
           mamba install -c conda-forge r-lintr
           R -e 'library(lintr); options(warn=1); lint_dir("scripts/")'
