@@ -24,9 +24,9 @@ jobs:
           conda config --show
           printenv | sort
       - shell: bash -l {0}
-         run: |
-         conda activate VitaminD_MR
-         source installation/post_conda_steps.sh  
+        run: |
+          conda activate VitaminD_MR
+          source installation/post_conda_steps.sh  
       - shell: bash -l {0}
         run: |
           conda activate VitaminD_MR
