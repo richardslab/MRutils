@@ -1,0 +1,10 @@
+Package: VitaminDMRredo
+Version: 0.0.0.1
+Date: 2021-03-10
+Title: My First Attempt at Vitamin-D MR / COVID reproduction
+Authors@R: c(person("Yossi", "Farjoun", role = c("aut", "cre"),
+                     email = "farjoun@gmail.com"))
+Depends: R (>= 3.6.3)
+Depends_backup: R (>= 3.6.3), TwoSampleMR, LDlinkR, dplyr
+Description: This is my first R Package. Also my first attempt at reproducing the Vitamin-D / COVID MR paper.
+License: GPL (>= 2)

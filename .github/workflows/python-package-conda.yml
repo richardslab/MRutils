@@ -1,0 +1,37 @@
+name: R and Python Package using Conda and mamba
+
+on: [push]
+
+jobs:
+  testStepsAndLint:
+    name: Build Environment using Mamba
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.6
+          activate-environment: VitaminD_MR
+          mamba-version: "*"
+          channels: conda-forge,r,bioconda,defaults,anaconda
+          channel-priority: true
+          environment-file: installation/environment.yaml
+      - name: Conda info
+        run: |
+          conda info --envs
+          conda list -n VitaminD_MR
+          conda config --show-sources
+          conda config --show
+          printenv | sort
+      - name: post-conda-steps
+        run: |
+          conda activate VitaminD_MR
+          R --no-save < installation/post_conda_steps.R 
+      - name: test-r-libraries
+        run: |
+          conda activate VitaminD_MR
+          R -e 'library(TwoSampleMR); library(LDlinkR);'
