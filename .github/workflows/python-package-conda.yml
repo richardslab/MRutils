@@ -14,7 +14,6 @@ jobs:
           mamba-version: "*"
           channels: conda-forge,bioconda,r,defaults
           channel-priority: true
-          activate-environment: anaconda-client-env
           environment-file: installation/environment.yaml
       - shell: bash -l {0}
         run: |
@@ -24,8 +23,6 @@ jobs:
           conda config --show
           printenv | sort
       - shell: bash -l {0}
-        run: mamba install jupyterlab
-      - shell: Lint with lintr
         run: |
-          mamba install r-lintr
+          mamba install -c conda-forge r-lintr
           R -e 'library(lintr); lint_dir("scripts")'

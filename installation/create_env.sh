@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-ENV=vitaminD_test
+ENV=vitaminD_MR
 set +eu \
   && PS1=dummy \
   && conda init \
@@ -16,7 +16,6 @@ conda create -y -n ${ENV}
 
 set +eu
 mamba env update \
-	--name ${ENV} \
 	--file installation/environment.yaml
 set -eu
 
