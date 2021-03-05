@@ -1,3 +1,5 @@
+
+name: VitaminD_MR
 channels:
   - conda-forge
   - r
@@ -5,7 +7,7 @@ channels:
   - defaults
 
 dependencies:
-  - python=3.6
+  - python>=3.6
   - r-tidyverse>=1.2
   - r-base==3.6.3
   - r-essentials=3.6.0
