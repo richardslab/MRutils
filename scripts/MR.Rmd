@@ -27,7 +27,7 @@ if(length(first_blank)==1){
 }
 names(data)[8]="beta"
 data=data%>%mutate_at(.vars = c("EAF","MAF","beta","SE","P"),as.numeric)
-significant_VD_snps=data%>%subset(P<5e-8 & MAF>=0.01)
+significant_VD_snps=data%>%subset(P<5e-8 & MAF>=0.01) 
 write.table(significant_VD_snps,"significant_VD_SNPs.tsv",sep = "\t",row.names = F,quote=F)
 ```
 
