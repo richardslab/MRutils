@@ -1,0 +1,9 @@
+
+python>=3.6
+r-base>=3.2
+rstudio>=1.1
+r-tidyverse>=1.2
+r-devtools
+
+
+# need to add dev tools and install twosamplemr from gihub!!?!
