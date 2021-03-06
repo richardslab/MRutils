@@ -6,6 +6,10 @@ jobs:
   testStepsAndLint:
     name: Build Environment using Mamba
     runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -l {0}
+
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
@@ -15,23 +19,22 @@ jobs:
           channels: conda-forge,bioconda,r,defaults
           channel-priority: true
           environment-file: installation/environment.yaml
-      - shell: bash -l {0}
+      - name: Conda info
         run: |
-          conda activate VitaminD_MR
-          conda info 
+          conda info --envs
           conda list 
           conda config --show-sources
           conda config --show
           printenv | sort
-      - shell: bash -l {0}
+      - name: post-conda-steps
         run: |
           conda activate VitaminD_MR
-          source installation/post_conda_steps.sh  
-      - shell: bash -l {0}
+          R --no-save < installation/post_conda_steps.R 
+      - name: test-r-libraries
         run: |
           conda activate VitaminD_MR
           R -e 'library(TwoSampleMR); library(LDlinkr);'
-      - shell: bash -l {0}
+      - name: lint-R
         run: |
           conda activate VitaminD_MR
           mamba install -c conda-forge r-lintr
