@@ -16,13 +16,13 @@ jobs:
         with:
           python-version: 3.6
           mamba-version: "*"
-          channels: conda-forge,bioconda,r,defaults
+          channels: conda-forge,bioconda,r,defaults,anaconda
           channel-priority: true
           environment-file: installation/environment.yaml
       - name: Conda info
         run: |
           conda info --envs
-          conda list 
+          conda list -n VitaminD_MR
           conda config --show-sources
           conda config --show
           printenv | sort

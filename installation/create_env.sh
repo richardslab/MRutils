@@ -1,7 +1,9 @@
 #!/bin/bash
 
+BASEDIR=$(dirname $0)
 
 ENV=vitaminD_MR
+
 set +eu \
   && PS1=dummy \
   && . $(conda info --base)/etc/profile.d/conda.sh \
@@ -10,20 +12,14 @@ set +eu \
 
 set -eu;
 
-conda env remove ${ENV} || echo "couldn't remove environment ${ENV}"
-conda create -y -n ${ENV} 
+conda deactivate || echo "no active environment"
+conda remove -n ${ENV} || echo "couldn't remove environment ${ENV}"
+conda create -y -n ${ENV}  || echo "it seem that environment ${ENV} is already present"
 
 set +eu
 mamba env update \
-	--file installation/environment.yaml
+	--file $BASEDIR/environment.yaml
 set -eu
 
 echo CREATED the environment ${ENV}
-
-conda activate ${ENV}
-
-## run post-conda steps
-echo RUNNING post-conda steps
-
-R < installation/post_conda_steps.R
 
