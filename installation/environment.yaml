@@ -19,3 +19,4 @@ dependencies:
   - r-devtools
   - r-plotly
   - r-openxlsx
+  - r-gmp
