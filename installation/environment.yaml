@@ -18,3 +18,4 @@ dependencies:
   - r-curl>=3.3 
   - r-devtools
   - r-plotly
+  - r-openxlsx
