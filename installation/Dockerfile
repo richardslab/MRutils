@@ -14,9 +14,9 @@ RUN conda update -y conda
 WORKDIR /app
 
 COPY create_env.sh environment.yaml /app/
-RUN create_env.sh
+RUN ./create_env.sh
 
 COPY post_conda_steps.* /app/
 RUN conda init
-RUN post_conda_steps.sh
+RUN ./post_conda_steps.sh
 
