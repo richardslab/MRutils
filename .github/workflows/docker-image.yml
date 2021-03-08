@@ -2,10 +2,13 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ * ]
+    branches:
+      - '**'
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [ * ]
-
+    branches:
+      - '**'
 jobs:
 
   build:
@@ -15,4 +18,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(branch):$(date +%s)
+      run: docker build . --file Dockerfile --tag my-image-name:${GITHUB_REF##*/}:$(date +%s)
