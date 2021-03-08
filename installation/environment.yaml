@@ -24,4 +24,5 @@ dependencies:
   - r-metafor
   - r-rio
   - r-lme4
+  - r-pbkrtest
 
