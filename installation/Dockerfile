@@ -11,14 +11,12 @@ RUN rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
 
-COPY create_env.sh environment.yaml /app/
-RUN /app/create_env.sh
-
-COPY post_conda_steps.* /app/
-
 WORKDIR /app
 
-RUN conda init
+COPY create_env.sh environment.yaml /app/
+RUN create_env.sh
 
-RUN ./post_conda_steps.sh
+COPY post_conda_steps.* /app/
+RUN conda init
+RUN post_conda_steps.sh
 

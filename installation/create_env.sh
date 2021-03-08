@@ -4,7 +4,7 @@ BASEDIR=$(dirname $0)
 
 ENV=VitaminD_MR
 set +eu \
-  && PS1=dummy \
+  && PS1='$$$ ' \
   && . $(conda info --base)/etc/profile.d/conda.sh \
   && conda activate base \
   && conda install -y -c conda-forge mamba 

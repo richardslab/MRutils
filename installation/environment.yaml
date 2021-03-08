@@ -5,6 +5,7 @@ channels:
   - r
   - bioconda
   - defaults
+  - anaconda
 
 dependencies:
   - python>=3.6
@@ -21,3 +22,6 @@ dependencies:
   - r-openxlsx
   - r-gmp
   - r-metafor
+  - r-rio
+
+  

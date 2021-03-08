@@ -6,7 +6,7 @@ BASEDIR=$(dirname $0)
 echo RUNNING post-conda steps
 
 set +e \
-  && PS1=dummy \
+  && PS1='$$$ ' \
   && . $(conda info --base)/etc/profile.d/conda.sh \
   && conda activate base 
 set -e
