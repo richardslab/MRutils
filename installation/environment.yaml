@@ -20,3 +20,4 @@ dependencies:
   - r-plotly
   - r-openxlsx
   - r-gmp
+  - r-metafor
