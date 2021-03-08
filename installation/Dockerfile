@@ -14,8 +14,11 @@ RUN conda update -y conda
 COPY create_env.sh environment.yaml /app/
 RUN /app/create_env.sh
 
-COPY post_conda_steps.* /app
-RUN /app/post_conda_steps.sh
+COPY post_conda_steps.* /app/
 
+WORKDIR /app
 
-#RUN . $(conda info --base)/etc/profile.d/conda.sh
+RUN conda init
+
+RUN ./post_conda_steps.sh
+
