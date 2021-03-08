@@ -25,4 +25,5 @@ dependencies:
   - r-rio
   - r-lme4
   - r-pbkrtest
+  - r-car
 
