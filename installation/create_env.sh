@@ -3,13 +3,11 @@
 BASEDIR=$(dirname $0)
 
 ENV=VitaminD_MR
-set -x
 set +eu \
   && PS1=dummy \
   && . $(conda info --base)/etc/profile.d/conda.sh \
   && conda activate base \
   && conda install -y -c conda-forge mamba 
-set +x
 set -eu;
 
 conda deactivate || echo "no active environment"
