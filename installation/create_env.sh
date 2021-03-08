@@ -2,7 +2,7 @@
 
 BASEDIR=$(dirname $0)
 
-ENV=vitaminD_MR
+ENV=VitaminD_MR
 
 set +eu \
   && PS1=dummy \
@@ -16,10 +16,10 @@ conda deactivate || echo "no active environment"
 conda remove -n ${ENV} || echo "couldn't remove environment ${ENV}"
 conda create -y -n ${ENV}  || echo "it seem that environment ${ENV} is already present"
 
-
+set +eu
 mamba env update \
 	--file $BASEDIR/environment.yaml
-
+set -eu
 
 echo CREATED the environment ${ENV}
 
