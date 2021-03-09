@@ -26,7 +26,9 @@ COPY post_conda_steps.* /app/
 RUN conda init
 RUN ./post_conda_steps.sh
 
+COPY Dockerfile /app/
 ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "/bin/bash"]
+
 
 
 
