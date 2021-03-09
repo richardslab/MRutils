@@ -22,7 +22,7 @@ dependencies:
   - r-openxlsx
   - r-gmp
   - r-metafor
-  - r-rio
+  - r-rio>=0.5.26
   - r-lme4
   - r-pbkrtest
   - r-car
