@@ -15,7 +15,9 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.6
+          activate-environment: VitaminD_MR
           mamba-version: "*"
+          packages: conda-forge,r,bioconda,defaults,anaconda
           channel-priority: true
           environment-file: installation/environment.yaml
       - name: Conda info
