@@ -22,12 +22,11 @@ RUN ./create_env.sh
 RUN conda init bash
 RUN echo "conda activate myenv" >> ~/.bashrc
 
-
 COPY post_conda_steps.* /app/
 RUN conda init
 RUN ./post_conda_steps.sh
 
-ENTRYPOINT ["conda" "run" "-n" "vitaminD_MR" "/bin/bash"]
+ENTRYPOINT ["conda", "run", "-n", "vitaminD_MR", "--no-capture-output", "/bin/bash"]
 
 
 
