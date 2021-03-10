@@ -35,8 +35,4 @@ jobs:
         run: |
           conda activate VitaminD_MR
           R -e 'library(TwoSampleMR); library(LDlinkR);'
-      - name: lint-R
-        run: |
-          conda activate VitaminD_MR
-          mamba install -c conda-forge r-lintr
-          R -e 'library(lintr); options(warn=1); lint_dir("scripts/")'
+     
