@@ -20,4 +20,3 @@ mamba env update \
 set -eu
 
 echo CREATED the environment ${ENV}
-

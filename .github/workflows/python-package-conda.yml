@@ -35,4 +35,3 @@ jobs:
         run: |
           conda activate VitaminD_MR
           R -e 'library(TwoSampleMR); library(LDlinkR);'
-     
