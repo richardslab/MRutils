@@ -1,3 +1,5 @@
+name: cleanshell-check
+
 on:
   push:
     branch:
