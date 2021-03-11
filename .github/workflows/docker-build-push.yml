@@ -30,4 +30,4 @@ jobs:
         with:
           context: installation
           push: true
-          tags: richardslab/vitamin_d_mr_test:latest
+          tags: richardslab/vitamin_d_mr_test:$(date +%s)_${GITHUB_REF##*/}
