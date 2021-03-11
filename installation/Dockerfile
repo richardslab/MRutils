@@ -2,7 +2,7 @@
 FROM ubuntu:18.04
 WORKDIR /home/
 # System packages 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get -q update && apt-get -q install -y curl
 
 # Install miniconda to /miniconda
 RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
