@@ -16,7 +16,6 @@ conda create -y -n ${ENV}  || echo "it seem that environment ${ENV} is already p
 
 set +eu
 mamba env update \
-	--quiet \
 	--file $BASEDIR/environment.yaml 
 set -eu
 
