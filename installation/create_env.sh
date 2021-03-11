@@ -1,8 +1,9 @@
 #!/bin/bash
 
-BASEDIR="$(dirname $0)"
+BASEDIR="$(dirname "$0")"
 
 ENV=VitaminD_MR
+# shellcheck source=/dev/null
 set +eu \
   && PS1='$$$ ' \
   && . "$(conda info --base)"/etc/profile.d/conda.sh \
