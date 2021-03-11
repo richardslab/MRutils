@@ -1,4 +1,4 @@
-name: ci
+name: docker-build-push
 
 on:
   push:
@@ -30,4 +30,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: richardslab/VitaminD_MR_test:latest
+          tags: richardslab/vitamin_d_mr_test:latest
