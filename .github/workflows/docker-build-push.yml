@@ -10,7 +10,6 @@ jobs:
     env:
       dockerhub_repository: vitamin_d_mr_test
       dockerhub_organization: richardslab
-      docker_tag_base: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}
     runs-on: ubuntu-latest
     steps:
       - 
@@ -28,8 +27,8 @@ jobs:
           if_true: ${{env.branch_tag}},${{env.latest}}
           if_false: ${{env.branch_tag}}
         env:
-          branch_tag: ${{env.docker_tag_base}}:${{steps.date.outputs.date}}_${{env.GITHUB_REF_SLUG}}
-          latest_tag: ${{env.docker_tag_base}}:latest
+          branch_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:${{steps.date.outputs.date}}_${{env.GITHUB_REF_SLUG}}
+          latest_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:latest
       -
         name: Checkout
         uses: actions/checkout@v2
