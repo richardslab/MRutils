@@ -10,7 +10,7 @@ jobs:
     env:
       dockerhub_repository: vitamin_d_mr_test
       dockerhub_organization: richardslab
-      docker_tag_base: ${{dockerhub_organization}}/${{dockerhub_repository}}
+      docker_tag_base: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}
     runs-on: ubuntu-latest
     steps:
       - 
