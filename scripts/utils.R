@@ -179,6 +179,7 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
 
 }
 
+<<<<<<< HEAD
 # expecting replacement string on the form "A=B,C=D" meaning that
 # B will be replaced with A and
 # D will be replaced with C
