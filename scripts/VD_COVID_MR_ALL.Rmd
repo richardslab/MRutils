@@ -24,7 +24,6 @@ exposure_name <- "Vitamin D"
 
 ```
 
-
 ## Extract data from VitaminD GWAS
 Since the input data is given to us as an excel spreadsheet, we have to extract the information from it
 "manually". In order to avoid copy-paste errors, we extract the information using the readxl library. 
@@ -118,45 +117,30 @@ pop <- c("CEU", "TSI", "GBR", "IBS")
 
 ##takes time (hits the LDLink API)
 proxies <- get_proxies(subset(merged_A2_and_VD, is.na(MAF.out))$rsid, token, population = pop, results_dir = "../derived_data/", skip_api = TRUE )
-```
-
-```{r use proxies}
 
 proxies_in_outcome <- extract_snps_from_bgzip(A2, snps = proxies) %>% map_outcome_data()
 
-# merge exposure proxies with exposure
-exposure_and_proxies <- merge(proxies, significant_VD_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
+data_proxies <- merge(proxies_in_outcome, proxies, by = c("rsid","CHR","POS"),suffixes = c(".out",".exp"))
 
-allele_matrix = strsplit(input, ",", fixed = T)[[1]] %>% 
-  {llply(strsplit(x = ., split = "=", fixed = T))} %>% 
-  purrr::transpose() %>% 
-  do.call(what = rbind)
-
-replace=allele_matrix[1,]
-pattern=allele_matrix[2,]
-
-
-# remove chimeric snps and then the smallest P
 chimeric <- c("(A/T)", "(T/A)", "(C/G)", "(G/C)")
-proxies_in_covid <- data_proxies %>%
+proxies_in_covid <- merge(proxies, data_proxies) %>%
   subset(Alleles %notin% chimeric) %>%
   group_by(query_rsid) %>%
-  slice_min(order_by = "P", n = 1)
+  slice_max(order_by = "P", n = 1)
 
 
-# merge with the exposure
-merged_with_proxies <- merge(significant_VD_snps,
-                             proxies_in_covid,
-                             suffixes = c(".exp",".out"),
-                             by.x = c("rsid", "CHR"),
-                             by.y = c("query_rsid", "CHR")) %>%
-  select(-MAF) %>%
-  select(c( -"R2", -"Correlated_Alleles", -"Alleles", -"Locus", -"POS.out"))
+merged_with_proxies <- merge(significant_VD_snps, 
+                              select(proxies_in_covid, -MAF), 
+                              suffixes = c(".exp",".out"), 
+                              by.x = c("rsid","CHR"), 
+                              by.y=c("query_rsid","CHR")) %>% select(-MAF) %>%
+  select(c( -"R2", -"Correlated_Alleles", -"Alleles", -"Locus", -"POS.out")) 
 
-# merged_with_proxies %<>% mutate(proxy_rsid = rsid.out, rsid.out = NULL,
-#                                 POS = POS.exp, POS.exp = NULL)
+names(merged_with_proxies)[which(names(merged_with_proxies) == "rsid.out")] <- "proxy_rsid"
+names(merged_with_proxies)[which(names(merged_with_proxies) == "POS.exp")] <- "POS"
 
-merged_and_combined <- rbind(proxies_in_covid, mutate(merged_A2_and_VD, proxy_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(MAF.out)
+merged_and_combined <- merged_with_proxies %>% 
+rbind(mutate(merged_A2_and_VD, proxy_rsid = NA), stringsAsFactors = FALSE)
 
 ```
 
@@ -174,7 +158,7 @@ write.table(pruned_combined_snps, file = "../derived_data/SNPsFor2SMR.txt", sep 
 results <- get_2smr_results("../derived_data/SNPsFor2SMR.txt")
 ```
 
-```{r show results}
+```{r}
 show(results$regressed)
 show(results$single_snp)
 show(results$density_plot)
