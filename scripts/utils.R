@@ -6,6 +6,8 @@ require(LDlinkR)
 require(plyr)
 require(reshape2)
 require(TwoSampleMR)
+require(mgsub)
+require(purrr)
 
 
 #it is expected that snps has two columns 'CHR' and 'POS' indicating the chromosome and 
@@ -176,6 +178,31 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
   subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique()))
 
 }
+
+# expecting replacement string on the form "A=B,C=D" meaning that
+# B will be replaced with A and
+# D will be replaced with C
+
+replace_alleles <- function(alleles, replacement_string) {
+  
+  allele_matrix = strsplit(replacement_string, ",", fixed = T)[[1]] %>% 
+  {llply(strsplit(x = ., split = "=", fixed = T))} %>% 
+    {purrr::transpose(.l = .)} %>% 
+    do.call(what = rbind)
+  
+  replace = allele_matrix[1,]
+  pattern = allele_matrix[2,]
+  
+  alleles %>% sapply(function(x) mgsub(x,pattern = pattern, replacement = replace))
+}
+
+
+
+find_duplicate_snps <- function(gwas) {
+  duplicated_rsids <- gwas[which(duplicated(gwas$rsid)),"rsid"]
+  gwas[which(gwas$rsid %in% duplicated_rsids),]
+}
+
 
 get_2smr_results <- function(preprocessed_snps){
   exposure <- read_exposure_data(preprocessed_snps, 
