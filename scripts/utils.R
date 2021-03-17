@@ -180,6 +180,9 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> cleaned up code, need to fix alleles, no more duplicates or missing data, added some packages
 # expecting replacement string on the form "A=B,C=D" meaning that
 # B will be replaced with A and
 # D will be replaced with C
