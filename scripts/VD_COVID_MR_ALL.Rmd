@@ -1,6 +1,17 @@
 ---
-title: "Vitamin D - COVID-19 MR (redo)"
+title: Vitamin D - COVID-19 MR (redo)
 output: pdf_document
+params:
+  outcome_gwas: COVID-A2
+  exposure_name: Vitamin D
+  pop: !r c("CEU", "TSI", "GBR", "IBS")
+  LDLink_token: "151d285edb97"
+  near_half_threshold: 0.08
+  exposure_pvalue_threshold: 5e-5
+  MAF_rare_threshold: 0.01
+  outcome_file: ../raw_data/COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
+  results_dir: ../derived_data
+
 ---
 
 ```{r setup, include=FALSE}
@@ -13,13 +24,11 @@ require(plyr)
 require(dplyr)
 require(readxl)
 require(glue)
+require(magrittr)
 
 source("utils.R")
 
 required_headers <- c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
-
-outcome_gwas <- "COVID-A2"
-exposure_name <- "Vitamin D"
 
 
 ```
@@ -35,35 +44,24 @@ data = read_excel("../raw_data/1-s2.0-S0002929720300173-mmc2.xlsx",
                   sheet = "Table S2", 
                   skip = 4, 
                   .name_repair = "minimal") %>% subset(select = c(1:5, 13:17))
+nrow(data)
 first_blank = min(which(is.na(data$RSID)))
 # use the first blank line as an indication of the end of the data, since the dictionary comes after
 if (length(first_blank) == 1) {
-  data = data[1:first_blank - 1,]
+  data = data[1:min(first_blank - 1, nrow(data)),]
 }
 names(data)[8] = "beta"
 names(data)[1] = "rsid"
 data = data %>% mutate_at(.vars = c("EAF", "MAF", "beta", "SE", "P"), as.numeric)
 data = data %>% mutate(POS = BP, CHR = gsub("^chr", "", CHR))
 
+significant_snps <- filter_and_write_exposure_data(data, location_prefix = params$results_dir, params$exposure_pvalue_threshold, params$MAF_rare_threshold)
 
-data <- subset(data, select = required_headers)
-
-write.table(data, "../derived_data/extracted_VD_SNPs.tsv", 
-            sep = "\t", 
-            row.names = FALSE, 
-            quote = FALSE)
-
-significant_VD_snps = data %>% subset(P < 5e-8 & MAF >= 0.01) 
-write.table(significant_VD_snps, 
-            "../derived_data/significant_VD_SNPs.tsv", 
-            sep = "\t", 
-            row.names = F, 
-            quote = F)
 ```
-### Outcome A2 
+### Outcome  
 
 ## extract relevant SNPs
-```{r extract A2 Snps}
+```{r extract Snps}
 
 map_outcome_data <- function(x) {
   
@@ -75,12 +73,12 @@ map_outcome_data <- function(x) {
          MAF = all_meta_AF, 
          EAF = all_meta_AF, 
          SE = all_inv_var_meta_sebeta) %>% 
-    subset(select=required_headers)
+      select(all_of(required_headers))
   
 }
 
-  A2 <- "../raw_data/COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz"
-  A2_outcome <- extract_snps_from_bgzip(outcome = A2, snps = significant_VD_snps) %>% map_outcome_data()
+ 
+  outcome_data <- extract_snps_from_bgzip(outcome = params$outcome_file, snps = significant_snps) %>% map_outcome_data()
   
 ```
 
@@ -88,95 +86,116 @@ map_outcome_data <- function(x) {
 ```{r find_unnamed_snps, cache=TRUE}
 ## this can take time and hits the API multiple times....
 
-withIds <- get_unknown_rsids_from_locus(A2_outcome)
+withIds <- get_unknown_rsids_from_locus(outcome_data)
 
-write.table(withIds, "../derived_data/rsIdsFromdbSnp.txt", quote = F, sep = '\t', row.names = F)
+write.table(withIds, glue("{params$results_dir}/rsIdsFromdbSnp.txt"), quote = F, sep = '\t', row.names = F)
 ```
 
 ```{r post-cache read variable}
-withIds <- read.table("../derived_data/rsIdsFromdbSnp.txt", sep = '\t', header = T)
+withIds <- read.table(glue("{params$results_dir}/rsIdsFromdbSnp.txt"), sep = '\t', header = T)
 
 ```
 
 ## merge into other data
 ```{r merge found snps into data}
-A2_outcome_with_rsids <- merge_rsids_into_gwas(A2_outcome, withIds)
+outcome_with_rsids <- merge_rsids_into_gwas(outcome_data, withIds)
   
-print(glue("there are {nrow(A2_outcome_with_rsids%>%subset(is.na(rsid)))} variants lacking rsid"))
+print(glue("there are {nrow(outcome_with_rsids%>%subset(is.na(rsid)))} variants lacking rsid, and {nrow(outcome_with_rsids)} variants overall."))
 
-merged_A2_and_VD <- merge(significant_VD_snps, suffixes = c(".exp", ".out"),
-                          A2_outcome_with_rsids, 
+merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
+                          outcome_with_rsids, 
                           by = c("rsid", "CHR", "POS"), 
                           all.x = T,
                           )
 ```
 
 ```{r get proxies, cache=TRUE}
-## these should be inputs
-token <- "151d285edb97" ## should be in a environment variable and input using 
-pop <- c("CEU", "TSI", "GBR", "IBS")
 
 ##takes time (hits the LDLink API)
-proxies <- get_proxies(subset(merged_A2_and_VD, is.na(MAF.out))$rsid, token, population = pop, results_dir = "../derived_data/", skip_api = TRUE )
+proxies <- get_proxies(subset(merged_exp_and_out, is.na(MAF.out))$rsid, params$LDLink_token, population = params$pop, results_dir = params$results_dir, skip_api = TRUE)
+
+print(glue("Found {nrow(proxies)} proxies for {length( unique(proxies$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$MAF.out)))} requested"))
 ```
 
 ```{r use proxies}
+#subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome
+proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies) %>% map_outcome_data()
 
-proxies_in_outcome <- extract_snps_from_bgzip(A2, snps = proxies) %>% map_outcome_data()
+proxies %<>% subset(rsid %in% proxies_in_outcome$rsid)
 
-# merge exposure proxies with exposure
-exposure_and_proxies <- merge(proxies, significant_VD_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
+print(glue("{nrow(proxies)} proxies were found in the outcome."))
 
-allele_matrix = strsplit(input, ",", fixed = T)[[1]] %>% 
-  {llply(strsplit(x = ., split = "=", fixed = T))} %>% 
-  purrr::transpose() %>% 
-  do.call(what = rbind)
-
-replace=allele_matrix[1,]
-pattern=allele_matrix[2,]
+# merge proxies with exposure
+exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
+print(glue("and {nrow(exposure_and_proxies)} proxies were merged with the exposure."))
 
 
 # remove chimeric snps and then the smallest P
-chimeric <- c("(A/T)", "(T/A)", "(C/G)", "(G/C)")
-proxies_in_covid <- data_proxies %>%
-  subset(Alleles %notin% chimeric) %>%
+proxies_with_exposure <- exposure_and_proxies %>% 
+  mutate(maf_near_half = abs(MAF.exp - 0.5) <= params$near_half_threshold, 
+         distance_to_query = abs(POS.exp - POS.proxy)) %>%
+  subset( !(Alleles %in% chimeric & maf_near_half)) %>%
   group_by(query_rsid) %>%
-  slice_min(order_by = "P", n = 1)
+  slice_max(order_by = R2, n = 1, with_ties = TRUE) %>%
+  slice_min(order_by = distance_to_query, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  mutate(maf_near_half = NULL, 
+         distance_to_query = NULL) 
+
+print(glue("After removing ambiguous snps and choosing the most linked SNP for every query, {nrow(proxies_with_exposure)} proxies remain."))
 
 
-# merge with the exposure
-merged_with_proxies <- merge(significant_VD_snps,
-                             proxies_in_covid,
-                             suffixes = c(".exp",".out"),
+```
+
+
+```{r fix-proxy-alleles}
+
+fixed_proxies_with_exposure <- adply(proxies_with_exposure, 1, function(x) {
+  replace_alleles(list(x$Alleles, x$EA, x$NEA), x$Correlated_Alleles) %>%
+    {
+  data.frame(Alleles = .[1],
+    EA = .[2],
+    NEA = .[3]
+    )}
+  })
+
+```
+
+```{r merge proxy rows with outcome and combine with rest}
+
+merged_with_proxies <- merge(proxies_in_outcome,
+                             fixed_proxies_with_exposure,
+                             suffixes = c(".out",".exp"),
                              by.x = c("rsid", "CHR"),
-                             by.y = c("query_rsid", "CHR")) %>%
-  select(-MAF) %>%
-  select(c( -"R2", -"Correlated_Alleles", -"Alleles", -"Locus", -"POS.out"))
+                             by.y = c("rsid", "CHR")) %>%
+  mutate(MAF.out = MAF, MAF = NULL) %>%
+  select(c(-POS.proxy, -POS.exp, -R2, -Correlated_Alleles, -Alleles, -Locus, -MAF.proxy))
 
-# merged_with_proxies %<>% mutate(proxy_rsid = rsid.out, rsid.out = NULL,
-#                                 POS = POS.exp, POS.exp = NULL)
+merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(MAF.out))
+print(glue("Total number of SNPs for use in 2-Sample MR (prior to pruning): {nrow(merged_and_combined)}."))
 
 ```
 
 Now we need to make sure that we do not have SNPs in high LD next to each other
 
-```{r prune_snps, cache=TRUE}
-pruned_combined_snps <- prune_snps(merged_and_combined, population = pop, token = token)
+```{r prune_snps, cache = TRUE}
+print(glue("pruning using populations: {params$pop}"))
+pruned_combined_snps <- prune_snps(merged_and_combined, population = params$pop, token = params$LDLink_token)
 
-print(glue("Total number of SNPs for use in 2-Sample MR: {nrow(pruned_combined_snps)}."))
+print(glue("Total number of SNPs for use in 2-Sample MR (pruned): {nrow(pruned_combined_snps)}."))
 
-write.table(pruned_combined_snps, file = "../derived_data/SNPsFor2SMR.txt", sep = '\t', quote = F, row.names = F)
+write.table(pruned_combined_snps, file = glue("{params$results_dir}/SNPsFor2SMR.txt"), sep = '\t', quote = F, row.names = F)
 ```
 
 ```{r get MR results}
-results <- get_2smr_results("../derived_data/SNPsFor2SMR.txt")
+results <- get_2smr_results(glue("{params$results_dir}/SNPsFor2SMR.txt"))
 ```
 
 ```{r show results}
-show(results$regressed)
-show(results$single_snp)
-show(results$density_plot)
-show(results$scatter_plot)
+
+for(p in results) {
+  show(p)
+}
 
 ```
 

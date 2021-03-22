@@ -20,23 +20,42 @@ extract_snps_from_bgzip <- function(outcome, snps, chr_col = 1, pos_col = 2, com
     {do.call(paste, .)}
   
   temp_output <- tempfile(pattern = "subsetted_exposure__", tmpdir = tempdir(), fileext = ".txt")
-  # print(glue("temp outputfile is: {temp_output}"))
+ 
   cmd <- glue("tabix -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
-  # print(cmd)
+  
   system(cmd)
   col_names <- read.table(outcome, header = T, nrows = 1, comment.char = "") %>% names()
-  # print(col_names)
   col_names[1] <- "CHR"
   outcome_data <- read.table(temp_output, col.names = col_names)
-  #file.remove(temp_output)
   
   outcome_data
 }
+
+chimeric <- c("(A/T)", "(T/A)", "(C/G)", "(G/C)")
 
 
 tee <- function(x) {
   print(x)
   x
+}
+
+
+filter_and_write_exposure_data <- function(data, location_prefix=".", pvalue_threshold, rare_threshold){
+  
+  data %<>% select(all_of(required_headers))
+  
+  write.table(data, glue("{location_prefix}/exp_extracted_SNPs.tsv"), 
+              sep = "\t", 
+              row.names = FALSE, 
+              quote = FALSE)
+  
+  significant_snps = data %>% subset(P < pvalue_threshold & MAF >= rare_threshold) 
+  write.table(significant_snps, 
+              glue("{location_prefix}/exp_significant_SNPs.tsv"), 
+              sep = "\t", 
+              row.names = F, 
+              quote = F)
+  significant_snps
 }
 
 
@@ -122,7 +141,7 @@ merge_rsids_into_gwas <- function(gwas,rsids){
 `%notin%` <- Negate(`%in%`)
 
 
-get_proxies <- function(rsids, token, population, results_dir = "derived_data", skip_api = FALSE, r2_threshold = 0.9) {
+get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE, r2_threshold = 0.9) {
   
   current_dir <- getwd()
   setwd(results_dir)
@@ -189,15 +208,16 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
 
 replace_alleles <- function(alleles, replacement_string) {
   
-  allele_matrix = strsplit(replacement_string, ",", fixed = T)[[1]] %>% 
+  allele_matrix <- strsplit(as.character(replacement_string), ",", fixed = T)[[1]] %>% 
   {llply(strsplit(x = ., split = "=", fixed = T))} %>% 
     {purrr::transpose(.l = .)} %>% 
     do.call(what = rbind)
   
-  replace = allele_matrix[1,]
-  pattern = allele_matrix[2,]
+  replace <- unlist(allele_matrix[1,])
+  pattern <- unlist(allele_matrix[2,])
   
-  alleles %>% sapply(function(x) mgsub(x,pattern = pattern, replacement = replace))
+  a <- alleles %>% sapply(function(x) mgsub(as.character(x), pattern = pattern, replacement = replace))
+  a
 }
 
 
@@ -222,7 +242,7 @@ get_2smr_results <- function(preprocessed_snps){
   
   outcome <- read_outcome_data(preprocessed_snps,
                                sep = '\t',
-                               snp_col="rsid",
+                               snp_col = "rsid",
                                beta_col = "beta.out",
                                se_col = "SE.out",
                                eaf_col = "EAF.out",
@@ -232,12 +252,22 @@ get_2smr_results <- function(preprocessed_snps){
   
   harmonized = harmonise_data(exposure, outcome)
   regressed <- mr(dat = harmonized)
+  
   single_snp_results <- mr_singlesnp(harmonized)
+  
+  leave_one_out <- mr_leaveoneout(harmonized)
   
   list(data = harmonized,
        regressed = regressed,
        single_snp = single_snp_results,
+       heterogeneity = mr_heterogeneity(harmonized),
+       pleiotropy = mr_pleiotropy_test(harmonized),
+       forest_plot = mr_forest_plot(single_snp_results),
+       funnel_plot = mr_funnel_plot(single_snp_results),
        density_plot = mr_density_plot(single_snp_results, regressed),
-       scatter_plot = mr_scatter_plot(regressed, harmonized))
+       scatter_plot = mr_scatter_plot(regressed, harmonized),
+       leave_one_out = leave_one_out,
+       leave_one_out_plot = mr_leaveoneout_plot(leave_one_out)
+  )
 }
 
