@@ -72,18 +72,10 @@ jobs:
           image: ${{ steps.tags.outputs.value }} 
           shell: bash
           run: |
-            echo "first line"
-            echo "second line"
+            conda info
       -
         name: run docker test png
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ steps.tags.outputs.value }} 
-          shell: -c
-          run:  Rscript -e 'png()' 
-      - 
-        name: run docker test ls
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ${{ steps.tags.outputs.value }} 
-          run:  -c "ls"  
+          run: -c "Rscript -e 'png()' "
