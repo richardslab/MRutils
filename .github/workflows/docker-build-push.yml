@@ -2,9 +2,12 @@ name: docker-build-push
 
 on:
   pull_request:
+    branches:
+      - ['*']
   push:
     branches:
       - main
+
 
 jobs:
   docker:
