@@ -68,12 +68,12 @@ jobs:
       - 
         name: test running in docker
         uses: addnab/docker-run-action@v3
-          with:
-            image: ${{ steps.tags.outputs.value }} 
-            shell: bash
-            run: |
-              echo "first line"
-              echo "second line"
+        with:
+          image: ${{ steps.tags.outputs.value }} 
+          shell: bash
+          run: |
+            echo "first line"
+            echo "second line"
       -
         name: run docker test png
         uses: addnab/docker-run-action@v3
@@ -83,7 +83,7 @@ jobs:
           run:  Rscript -e 'png()' 
       - 
         name: run docker test ls
-         uses: addnab/docker-run-action@v3
-          with:
+        uses: addnab/docker-run-action@v3
+        with:
           image: ${{ steps.tags.outputs.value }} 
           run:  -c "ls"  
