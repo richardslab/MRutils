@@ -9,6 +9,7 @@ channels:
 
 dependencies:
   - python>=3.6
+  - tabix
   - r-tidyverse>=1.2
   - r-base>=3.6.1
   - r-essentials=3.6
@@ -26,5 +27,5 @@ dependencies:
   - r-lme4
   - r-pbkrtest
   - r-car
-  - tabix
+  - r-mgsub
 
