@@ -46,8 +46,7 @@ jobs:
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-          ${{ runner.os }}-buildx-
+          restore-keys: ${{ runner.os }}-buildx-
       -
         name: Login to DockerHub
         uses: docker/login-action@v1
@@ -63,7 +62,11 @@ jobs:
           tags: ${{ steps.tags.outputs.value }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-
-      - name: run docker
+      -
+        name: run docker test png
         image: ${{ steps.tags.outputs.value }} 
-        run: ls
+        run:  -c " Rscript -e 'png()' " 
+      - 
+        name: run docker test ls
+        image: ${{ steps.tags.outputs.value }} 
+        run:  -c "ls"  
