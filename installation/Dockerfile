@@ -2,7 +2,8 @@
 FROM ubuntu:18.04
 WORKDIR /home/
 # System packages 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl 
+
 
 # Install miniconda to /miniconda
 RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -27,6 +28,9 @@ RUN conda init
 RUN ./post_conda_steps.sh
 
 RUN conda env export -n VitaminD_MR > /app/linux_env.yml
+
+RUN apt-get update && apt-get install -y curl libcairo2-dev vim less 
+
 
 COPY Dockerfile /app/
 ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "/bin/bash"]
