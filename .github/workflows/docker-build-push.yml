@@ -65,11 +65,25 @@ jobs:
           tags: ${{ steps.tags.outputs.value }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
+      - 
+        name: test running in docker
+        uses: addnab/docker-run-action@v3
+          with:
+            image: ${{ steps.tags.outputs.value }} 
+            shell: bash
+            run: |
+              echo "first line"
+              echo "second line"
       -
         name: run docker test png
-        image: ${{ steps.tags.outputs.value }} 
-        run:  -c " Rscript -e 'png()' " 
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ${{ steps.tags.outputs.value }} 
+          shell: -c
+          run:  Rscript -e 'png()' 
       - 
         name: run docker test ls
-        image: ${{ steps.tags.outputs.value }} 
-        run:  -c "ls"  
+         uses: addnab/docker-run-action@v3
+          with:
+          image: ${{ steps.tags.outputs.value }} 
+          run:  -c "ls"  
