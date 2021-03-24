@@ -31,11 +31,7 @@ jobs:
           conda config --show-sources
           conda config --show
           printenv | sort
-      - name: post-conda-steps
-        run: |
-          conda activate VitaminD_MR
-          installation/post_conda_steps.sh ${{secrets.R_PAT_GITHUB}} 
-      - name: test-r-libraries
+       - name: test-r-libraries
         run: |
           conda activate VitaminD_MR
           R -e 'library(TwoSampleMR); library(LDlinkR);'
