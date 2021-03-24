@@ -81,7 +81,10 @@ jobs:
         with:
           image: ${{ steps.tags.outputs.value }} 
           shell: /miniconda/condabin/conda
-          run: run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
+          run: >
+            run -n VitaminD_MR 
+            /bin/bash -c 
+            "Rscript -e 'png()' "
        -
         name: run docker test conda info
         uses: addnab/docker-run-action@v3
