@@ -9,6 +9,8 @@ require(TwoSampleMR)
 require(mgsub)
 require(purrr)
 
+required_headers <- c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
+
 
 #it is expected that snps has two columns 'CHR' and 'POS' indicating the chromosome and 
 # the  (1-based) position of the snp in question.
@@ -21,8 +23,7 @@ extract_snps_from_bgzip <- function(outcome, snps, chr_col = 1, pos_col = 2, com
   
   temp_output <- tempfile(pattern = "subsetted_exposure__", tmpdir = tempdir(), fileext = ".txt")
  
-  cmd <- glue("tabix -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
-  
+  cmd <- glue("tabix -f -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
   system(cmd)
   col_names <- read.table(outcome, header = T, nrows = 1, comment.char = "") %>% names()
   col_names[1] <- "CHR"
@@ -44,14 +45,14 @@ filter_and_write_exposure_data <- function(data, location_prefix=".", pvalue_thr
   
   data %<>% select(all_of(required_headers))
   
-  write.table(data, glue("{location_prefix}/exp_extracted_SNPs.tsv"), 
+  write.table(data, glue("{location_prefix}exp_extracted_SNPs.tsv"), 
               sep = "\t", 
               row.names = FALSE, 
               quote = FALSE)
   
   significant_snps = data %>% subset(P < pvalue_threshold & MAF >= rare_threshold) 
   write.table(significant_snps, 
-              glue("{location_prefix}/exp_significant_SNPs.tsv"), 
+              glue("{location_prefix}exp_significant_SNPs.tsv"), 
               sep = "\t", 
               row.names = F, 
               quote = F)
@@ -189,6 +190,7 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
   while (nrow(pairs) > 0) {
     ##TODO: make sure to keep snps with smaller P value.....
     to_remove <- pairs[which.max(pairs$value), "variable"] %>% as.character()
+    print(glue("Removing SNP {to_remove}, {pairs[which.max(pairs$value),]}"))
     LDpairs_culled <- subset(LDpairs_culled, variable != to_remove & RS_number != to_remove)
     pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
   }
@@ -198,10 +200,6 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
 
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> cleaned up code, need to fix alleles, no more duplicates or missing data, added some packages
 # expecting replacement string on the form "A=B,C=D" meaning that
 # B will be replaced with A and
 # D will be replaced with C

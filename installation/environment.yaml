@@ -1,8 +1,8 @@
 
 name: VitaminD_MR
 channels:
-  - conda-forge
   - r
+  - conda-forge
   - bioconda
   - defaults
   - anaconda
@@ -10,6 +10,8 @@ channels:
 dependencies:
   - python>=3.6
   - tabix
+  - gfortran_linux-64=7.3
+  - r::r-stringi
   - r-tidyverse>=1.2
   - r-base>=3.6.1
   - r-essentials=3.6

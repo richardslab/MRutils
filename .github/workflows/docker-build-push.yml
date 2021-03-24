@@ -59,12 +59,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
+        name: prepare github PAT for docker
+        run: echo PAT_GITHUB=${{secrets.R_GITHUB_PAT}} >> .github/build-env.sh
+      -
         name: Build and push branch
         uses: docker/build-push-action@v2
         with:
           context: installation
           push: true
           tags: ${{ steps.tags.outputs.value }}
+          env:
       - 
         name: test running in docker
         uses: addnab/docker-run-action@v3

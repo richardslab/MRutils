@@ -4,10 +4,11 @@ output: pdf_document
 params:
   outcome_gwas: COVID-A2
   exposure_name: Vitamin D
+  prefix: VD_A2
   pop: !r c("CEU", "TSI", "GBR", "IBS")
   LDLink_token: "151d285edb97"
   near_half_threshold: 0.08
-  exposure_pvalue_threshold: 5e-5
+  exposure_pvalue_threshold: !r as.numeric("5e-5") #needs !r otherwise it's interpreted as a string....
   MAF_rare_threshold: 0.01
   outcome_file: ../raw_data/COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
   results_dir: ../derived_data
@@ -16,9 +17,12 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set("root.dir", "~/RichardsLab/VitaminD_COVID_MR_reproduce/")
+knitr::opts_knit$set("root.dir", "~/RichardsLab/VitaminD_COVID_MR_reproduce/scripts")
 knitr::opts_chunk$set(cache=TRUE)
 
+```
+
+```{r libraries and setup}
 require(tidyr)
 require(plyr)
 require(dplyr)
@@ -28,8 +32,7 @@ require(magrittr)
 
 source("utils.R")
 
-required_headers <- c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
-
+print(params)
 
 ```
 
@@ -44,7 +47,7 @@ data = read_excel("../raw_data/1-s2.0-S0002929720300173-mmc2.xlsx",
                   sheet = "Table S2", 
                   skip = 4, 
                   .name_repair = "minimal") %>% subset(select = c(1:5, 13:17))
-nrow(data)
+
 first_blank = min(which(is.na(data$RSID)))
 # use the first blank line as an indication of the end of the data, since the dictionary comes after
 if (length(first_blank) == 1) {
@@ -55,7 +58,10 @@ names(data)[1] = "rsid"
 data = data %>% mutate_at(.vars = c("EAF", "MAF", "beta", "SE", "P"), as.numeric)
 data = data %>% mutate(POS = BP, CHR = gsub("^chr", "", CHR))
 
-significant_snps <- filter_and_write_exposure_data(data, location_prefix = params$results_dir, params$exposure_pvalue_threshold, params$MAF_rare_threshold)
+significant_snps <- filter_and_write_exposure_data(data, 
+                                                   location_prefix = glue("{params$results_dir}/{params$prefix}_"), 
+                                                   params$exposure_pvalue_threshold, 
+                                                   params$MAF_rare_threshold)
 
 ```
 ### Outcome  
@@ -80,19 +86,23 @@ map_outcome_data <- function(x) {
  
   outcome_data <- extract_snps_from_bgzip(outcome = params$outcome_file, snps = significant_snps) %>% map_outcome_data()
   
+  print(glue("There are {nrow(outcome_data)} SNPs in the outcome data"))
 ```
 
 ## find names for un-named snps
 ```{r find_unnamed_snps, cache=TRUE}
 ## this can take time and hits the API multiple times....
+print(glue("There are {nrow(outcome_data%>%subset(is.na(rsid)))} SNPs in the outcome data that are missing their rsid"))
 
 withIds <- get_unknown_rsids_from_locus(outcome_data)
+print(glue("{nrow(withIds)} SNPs rsids were found"))
 
-write.table(withIds, glue("{params$results_dir}/rsIdsFromdbSnp.txt"), quote = F, sep = '\t', row.names = F)
+
+write.table(withIds, glue("{params$results_dir}/{params$prefix}_rsIdsFromdbSnp.txt"), quote = F, sep = '\t', row.names = F)
 ```
 
 ```{r post-cache read variable}
-withIds <- read.table(glue("{params$results_dir}/rsIdsFromdbSnp.txt"), sep = '\t', header = T)
+withIds <- read.table(glue("{params$results_dir}/{params$prefix}_rsIdsFromdbSnp.txt"), sep = '\t', header = T)
 
 ```
 
@@ -100,13 +110,17 @@ withIds <- read.table(glue("{params$results_dir}/rsIdsFromdbSnp.txt"), sep = '\t
 ```{r merge found snps into data}
 outcome_with_rsids <- merge_rsids_into_gwas(outcome_data, withIds)
   
-print(glue("there are {nrow(outcome_with_rsids%>%subset(is.na(rsid)))} variants lacking rsid, and {nrow(outcome_with_rsids)} variants overall."))
+print(glue("After merging the results, there are {nrow(outcome_with_rsids%>%subset(is.na(rsid)))} variants lacking rsid, and {nrow(outcome_with_rsids)} variants overall."))
+```
 
+```{r merge exposure and outcome}
 merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
                           outcome_with_rsids, 
                           by = c("rsid", "CHR", "POS"), 
                           all.x = T,
                           )
+
+print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_out%>%subset(is.na(beta.out)))} variants lacking 'beta.out', and {nrow(merged_exp_and_out)} variants overall."))
 ```
 
 ```{r get proxies, cache=TRUE}
@@ -184,18 +198,19 @@ pruned_combined_snps <- prune_snps(merged_and_combined, population = params$pop,
 
 print(glue("Total number of SNPs for use in 2-Sample MR (pruned): {nrow(pruned_combined_snps)}."))
 
-write.table(pruned_combined_snps, file = glue("{params$results_dir}/SNPsFor2SMR.txt"), sep = '\t', quote = F, row.names = F)
+write.table(pruned_combined_snps, file = glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"), sep = '\t', quote = F, row.names = F)
 ```
 
 ```{r get MR results}
-results <- get_2smr_results(glue("{params$results_dir}/SNPsFor2SMR.txt"))
+results <- get_2smr_results(glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"))
 ```
 
 ```{r show results}
 
-for(p in results) {
+for (p in results) {
   show(p)
 }
+save(results, file = glue("{params$results_dir}/{params$prefix}_2SMR_results.RData"))
 
 ```
 
