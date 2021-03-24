@@ -126,22 +126,24 @@ print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_o
 ```{r get proxies, cache=TRUE}
 
 ##takes time (hits the LDLink API)
-proxies <- get_proxies(subset(merged_exp_and_out, is.na(MAF.out))$rsid, params$LDLink_token, population = params$pop, results_dir = params$results_dir, skip_api = TRUE)
+proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(MAF.out))$rsid, params$LDLink_token, population = params$pop, results_dir = params$results_dir, skip_api = TRUE)
 
-print(glue("Found {nrow(proxies)} proxies for {length( unique(proxies$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$MAF.out)))} requested"))
+print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$MAF.out)))} requested"))
 ```
 
 ```{r use proxies}
 #subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome
-proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies) %>% map_outcome_data()
+proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
 
-proxies %<>% subset(rsid %in% proxies_in_outcome$rsid)
+proxies <- proxies_raw %>% subset(rsid %in% proxies_in_outcome$rsid)
 
-print(glue("{nrow(proxies)} proxies were found in the outcome."))
+print(glue("{nrow(proxies)} proxies (of {nrow(proxies_raw)}) were found in the outcome...."))
+```
 
+```{r merge proxies and exposure}
 # merge proxies with exposure
 exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
-print(glue("and {nrow(exposure_and_proxies)} proxies were merged with the exposure."))
+print(glue("...and {nrow(exposure_and_proxies)} proxies were succesfully merged with the exposure."))
 
 
 # remove chimeric snps and then the smallest P

@@ -24,6 +24,9 @@ jobs:
           channels: conda-forge,r,bioconda,defaults,anaconda
           channel-priority: true
           environment-file: installation/environment.yaml
+      - name: post-conda-steps
+        run: |
+          installation/post_conda_steps.sh 
       - name: Conda info
         run: |
           conda info --envs
