@@ -36,10 +36,10 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v2
-      # - 
-      #   name: Cache docker results
-      #   uses: satackey/action-docker-layer-caching@v0.0.11
-      #     continue-on-error: true
+      -
+        name: Cache docker results
+        uses: satackey/action-docker-layer-caching@v0.0.11
+          continue-on-error: true
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -81,11 +81,8 @@ jobs:
         with:
           image: ${{ steps.tags.outputs.value }} 
           shell: /miniconda/condabin/conda
-          run: >
-            run -n VitaminD_MR 
-            /bin/bash -c 
-            "Rscript -e 'png()' "
-       -
+          run: run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
+      -
         name: run docker test conda info
         uses: addnab/docker-run-action@v3
         with:
