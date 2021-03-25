@@ -6,7 +6,8 @@ params:
   exposure_name: Vitamin D
   prefix: VD_A2
   pop: !r c("CEU", "TSI", "GBR", "IBS")
-  LDLink_token: "151d285edb97"
+  # LDLink_token: "151d285edb97"
+  LDLink_token: "<NEED INPUT>"
   near_half_threshold: 0.08
   exposure_pvalue_threshold: !r as.numeric("5e-5") #needs !r otherwise it's interpreted as a string....
   MAF_rare_threshold: 0.01

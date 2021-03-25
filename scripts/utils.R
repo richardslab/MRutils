@@ -201,8 +201,8 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
   
   #TODO: figure out why there are duplicates in the SNP data...probably some merge...
 
-  nrow(LDpairs_culled$RS_number %>% unique())
-  nrow(LDpairs_culled$variable %>% unique())
+  print(nrow(LDpairs_culled$RS_number %>% unique()))
+  print(nrow(LDpairs_culled$variable %>% unique()))
   
   subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique()))
 

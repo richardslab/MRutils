@@ -9,15 +9,15 @@ set +eu \
   && . "$(conda info --base)"/etc/profile.d/conda.sh \
   && conda activate base \
   && conda install -y -c conda-forge mamba 
-set -eu;
+#set -eu;
 
 conda deactivate || echo "no active environment"
 conda remove env -n ${ENV} || echo "couldn't remove environment ${ENV}"
 conda create -y -n ${ENV}  || echo "it seem that environment ${ENV} is already present"
 
-set +eu
+#set +eu
 mamba env update \
 	--file "$BASEDIR"/environment.yaml 
-set -eu
+#set -eu
 
 echo CREATED the environment ${ENV}

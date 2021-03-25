@@ -12,6 +12,7 @@ dependencies:
   - tabix
   - gfortran_linux-64=7.3
   - r::r-stringi
+  - r-argparse
   - r-tidyverse>=1.2
   - r-base>=3.6.1
   - r-essentials=3.6

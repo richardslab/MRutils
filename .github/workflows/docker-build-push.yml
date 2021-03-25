@@ -66,6 +66,9 @@ jobs:
           context: installation
           push: true
           tags: ${{ steps.tags.outputs.value }}
+
+      - name: Show space available
+        run: df -h .
       - 
         name: test running in docker
         uses: addnab/docker-run-action@v3
