@@ -8,11 +8,11 @@ parser <- ArgumentParser()
 # by default ArgumentParser will add an help option 
 
 parser$add_argument("-t", "--token", 
-                    type = "string",
+                    type = "character",
                     help = "LD-Link API access token. If you don't have one go here: https://ldlink.nci.nih.gov/?tab=apiaccess",
                     metavar = "token")
 parser$add_argument("-i", "--input-file", 
-                    type = "string", 
+                    type = "character", 
                     help = "Report Rmd file to knit", 
                     metavar = "Rmd report")
 
@@ -21,4 +21,4 @@ parser$add_argument("-i", "--input-file",
 args <- parser$parse_args()
 
 print(args)
-rmarkdown::render(args.input_file, 'pdf_document', params = list(LDLink_token = args.token))
+rmarkdown::render(args$input_file, 'pdf_document', params = list(LDLink_token = args$token))
