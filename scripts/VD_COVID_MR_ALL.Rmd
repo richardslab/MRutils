@@ -18,8 +18,8 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set("root.dir", "~/RichardsLab/VitaminD_COVID_MR_reproduce/scripts")
-knitr::opts_chunk$set(cache=TRUE)
+# knitr::opts_knit$set("root.dir", "~/RichardsLab/VitaminD_COVID_MR_reproduce/scripts")
+knitr::opts_chunk$set(cache = TRUE)
 
 ```
 
