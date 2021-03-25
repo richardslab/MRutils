@@ -66,7 +66,6 @@ jobs:
           context: installation
           push: true
           tags: ${{ steps.tags.outputs.value }}
-          env:
       - 
         name: test running in docker
         uses: addnab/docker-run-action@v3
@@ -79,9 +78,8 @@ jobs:
         name: run docker test png
         uses: addnab/docker-run-action@v3
         with:
-          image: ${{ steps.tags.outputs.value }} 
-          shell: /miniconda/condabin/conda
-          run: run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
+          image: ${{ steps.tags.outputs.value }}  
+          run: /miniconda/condabin/conda run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
       -
         name: run docker test conda info
         uses: addnab/docker-run-action@v3

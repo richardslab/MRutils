@@ -187,20 +187,26 @@ prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){
   LDpairs_culled <- LDPairs
   
   pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
-  removed=head(pairs,n=0)
+  removed <- head(pairs, n = 0)
   while (nrow(pairs) > 0) {
     ##TODO: make sure to keep snps with smaller P value.....
     to_remove <- pairs[which.max(pairs$value), "variable"] %>% as.character()
-    removed=rbind(removed,pairs[which.max(pairs$value),])
+    removed <- rbind(removed,pairs[which.max(pairs$value),])
     
     LDpairs_culled <- subset(LDpairs_culled, variable != to_remove & RS_number != to_remove)
     pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
   }
+  print(glue("Removed {nrow(removed)} snps due to high LD (removing variable):"))
   print(removed)
   
   #TODO: figure out why there are duplicates in the SNP data...probably some merge...
+
+  nrow(LDpairs_culled$RS_number %>% unique())
+  nrow(LDpairs_culled$variable %>% unique())
+  
   subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique()))
 
+    
 }
 
 # expecting replacement string on the form "A=B,C=D" meaning that
