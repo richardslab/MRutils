@@ -12,9 +12,9 @@ env:
     dockerhub_repository: vitamin_d_mr_test
     dockerhub_organization: richardslab
 jobs:
-  docker:
+  build_docker:
     runs-on: ubuntu-latest
-  steps:
+    steps:
       - name: Show space available
         run: df -h .
       - 
@@ -86,7 +86,7 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.value }}
   test:
-    needs: build
+    needs: build_docker
     runs-on: ubuntu-latest
     steps:
       -
