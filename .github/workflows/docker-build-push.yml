@@ -75,11 +75,11 @@ jobs:
         name: Show space available
         run: df -h .
       -
-        name: test
+        name: Show variables
         run: |
-          echo ${{ needs.variables.outputs.date }}
-          echo ${{ needs.variables.outputs.tag }}
-          echo ${{ needs.variables.outputs.branch_tag }}
+          echo date = ${{ needs.variables.outputs.date }}
+          echo tags = ${{ needs.variables.outputs.tag }}
+          echo branch = ${{ needs.variables.outputs.branch_tag }}
       -
         name: Build and push branch
         uses: docker/build-push-action@v2
