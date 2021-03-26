@@ -86,10 +86,28 @@ jobs:
           context: installation
           push: true
           tags: ${{ steps.tags.outputs.value }}
-
+  test:
+    env:
+      dockerhub_repository: vitamin_d_mr_test
+      dockerhub_organization: richardslab
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v3.x
+      -
+        uses: haya14busa/action-cond@v1
+        id: tags
+        with:
+          value: ${{env.branch_tag}}
+          cond: true
+          if_true: ${{env.branch_tag}}
+          if_false: ''
+        env:
+          branch_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:${{steps.date.outputs.date}}_${{env.GITHUB_REF_SLUG}}
       - name: Show space available
         run: df -h .
-      - 
+      -
         name: test running in docker
         uses: addnab/docker-run-action@v3
         with:
@@ -98,11 +116,17 @@ jobs:
           run: |
             conda info
       -
+        name: Show space available
+        run: df -h .
+      -
         name: run docker test png
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ steps.tags.outputs.value }}  
           run: /miniconda/condabin/conda run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
+      -
+        name: Show space available
+        run: df -h .          
       -
         name: run docker test conda info
         uses: addnab/docker-run-action@v3
