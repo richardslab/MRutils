@@ -211,7 +211,7 @@ prune_snps <- function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
     pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
   }
   
-  list(rsids = subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique())), 
+  list(rsids = subset(rsids_and_chr, rsid %notin% removed), 
        removed_rsid = removed)
 }
 

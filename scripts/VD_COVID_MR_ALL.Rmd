@@ -150,8 +150,12 @@ print(glue("{nrow(proxies)} proxies (of {nrow(proxies_raw)}) were found in the o
 ```{r merge proxies and exposure}
 # merge proxies with exposure
 exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
-print(glue("...and {nrow(exposure_and_proxies)} proxies were succesfully merged with the exposure."))
+print(glue("...and {nrow(exposure_and_proxies)} proxies were successfully merged with the exposure."))
 
+missing <- c("rs7718395", "rs3822868", "rs10887718", "rs8018720", "rs2909218", "rs2229742")
+
+missing %in% significant_snps$rsid
+missing %in% exposure_and_proxies$rsid
 
 # remove chimeric snps and then the smallest P
 proxies_with_exposure <- exposure_and_proxies %>% 
@@ -182,6 +186,7 @@ fixed_proxies_with_exposure <- adply(proxies_with_exposure, 1, function(x) {
     )}
   })
 
+
 ```
 
 ```{r merge proxy rows with outcome and combine with rest}
@@ -196,6 +201,9 @@ merged_with_proxies <- merge(proxies_in_outcome,
 
 merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(MAF.out))
 print(glue("Total number of SNPs for use in 2-Sample MR (prior to pruning): {nrow(merged_and_combined)}."))
+
+missing %in% merged_and_combined$rsid
+
 
 ```
 
@@ -220,14 +228,20 @@ show(p + aes(fill = value > params$prune_r2_threshold) + labs(fill = expression(
 ```{r }
 list_result <- prune_snps(merged_and_combined, ld_pairs, params$prune_r2_threshold)
 
+
 pruned_combined_snps <- list_result$rsids
 removed_rsids <- list_result$removed_rsid
+
+missing %in% merged_and_combined$rsid
+missing %in% pruned_combined_snps$rsid
+
 
 ggplot(ld_pairs) +  
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable)) +
-  aes(fill = value > params$prune_r2_threshold, alpha= ifelse(RS_number %in% removed_rsids | variable %in% removed_rsids, 0.1,1)) + 
-  labs(fill = expression(R^2>threshold), alpha = "variant removed", parse = TRUE)
+  aes(fill = value > params$prune_r2_threshold, alpha = RS_number %in% removed_rsids | variable %in% removed_rsids) + 
+  labs(fill = expression(R^2>threshold), alpha = "variant removed", parse = TRUE) + 
+  scale_alpha_manual(values = c(0.3, 1), breaks = c(TRUE, FALSE))
  
 print(glue_collapse( c( glue("Removed {length(removed_rsids)} snps due to high LD (removed): "),glue("{removed_rsids} "))))
 print(glue("Total number of SNPs for use in 2-Sample MR (pruned): {nrow(pruned_combined_snps)}."))

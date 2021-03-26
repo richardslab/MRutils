@@ -19,7 +19,7 @@ RUN conda update -y conda
 WORKDIR /app
 
 # Make RUN commands use `bash --login`:
-SHELL ["/bin/bash", "--login", "-c"]
+SHELL ["/bin/bash", "--login"]
 
 COPY create_env.sh environment.yaml /app/
 RUN ./create_env.sh
