@@ -12,7 +12,7 @@ set +eu \
 #set -eu;
 
 conda deactivate || echo "no active environment"
-conda remove env -n ${ENV} || echo "couldn't remove environment ${ENV}"
+conda env remove -n ${ENV} || echo "couldn't remove environment ${ENV}"
 conda create -y -n ${ENV}  || echo "it seem that environment ${ENV} is already present"
 
 #set +eu
