@@ -63,6 +63,11 @@ jobs:
         name: Show space available
         run: df -h .
       -
+        name: test
+        run: |
+          echo ${{ needs.variables.tags.env.branch_tag }}
+          echo ${{ needs.variables.tags.env.branch_tag }}
+      -
         name: Build and push branch
         uses: docker/build-push-action@v2
         with:
