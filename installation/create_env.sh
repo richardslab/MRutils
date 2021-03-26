@@ -16,7 +16,7 @@ conda remove env -n ${ENV} || echo "couldn't remove environment ${ENV}"
 conda create -y -n ${ENV}  || echo "it seem that environment ${ENV} is already present"
 
 #set +eu
-mamba env update \
+mamba env update -q \
 	--file "$BASEDIR"/environment.yaml 
 #set -eu
 

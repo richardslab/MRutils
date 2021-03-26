@@ -87,7 +87,7 @@ jobs:
           context: installation
           push: true
           tags: ${{ needs.variables.outputs.tag }}
-  test:
+  test_conda_info:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
     steps:
@@ -101,6 +101,10 @@ jobs:
           shell: bash
           run: |
             conda info
+  test_r_png:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
       -
         name: Show space available
         run: df -h .
@@ -110,6 +114,10 @@ jobs:
         with:
           image: ${{ needs.variables.tags.env.branch_tag }}  
           run: /miniconda/condabin/conda run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
+  test_conda_info_in_env:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
       -
         name: Show space available
         run: df -h .          
