@@ -33,7 +33,12 @@ require(magrittr)
 
 source("utils.R")
 
-print(params)
+for (i in names(params)) { 
+  if (i != "LDLink_token") 
+    print(glue("{i} = {params[i]}")) 
+  else 
+    print(glue("{i} = [redacted]"))
+}
 
 ```
 
