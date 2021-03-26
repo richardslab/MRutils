@@ -32,7 +32,7 @@ jobs:
         run: |
           install.packages(c("remotes"))
           remotes::install_deps(dependencies = TRUE)
-          devtools::install_github("lintr")
+          devtools::install_github("jimhester/lintr")
         shell: Rscript {0}
 
       - name: Install package
