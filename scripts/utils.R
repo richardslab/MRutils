@@ -9,23 +9,30 @@ require(TwoSampleMR)
 require(mgsub)
 require(purrr)
 
-required_headers <- c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
+required_headers <- 
+  c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
 
 
-#it is expected that snps has two columns 'CHR' and 'POS' indicating the chromosome and 
-# the  (1-based) position of the snp in question.
+# it is expected that snps has two columns 'CHR' and 'POS' 
+# indicating the chromosome and the  (1-based) position of the snp in question.
 
-extract_snps_from_bgzip <- function(outcome, snps, chr_col = 1, pos_col = 2, comment_char = "#") {
+extract_snps_from_bgzip <- 
+  function(outcome, snps, chr_col = 1, pos_col = 2, comment_char = "#") {
   #nolint (unused variable)
   region <- snps %>% 
     alply(1, function(x) with(x, glue("{CHR}:{POS}-{POS}"))) %>% 
-    {do.call(paste, .)}
+    { do.call(paste, .) }
   
-  temp_output <- tempfile(pattern = "subsetted_exposure__", tmpdir = tempdir(), fileext = ".txt")
+  temp_output <- tempfile(pattern = "subsetted_exposure__", 
+                          tmpdir = tempdir(), 
+                          fileext = ".txt")
  
   cmd <- glue("tabix -f -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
   system(cmd)
-  col_names <- read.table(outcome, header = T, nrows = 1, comment.char = "") %>% names()
+  col_names <- read.table(outcome, 
+                          header = TRUE, 
+                          nrows = 1, 
+                          comment.char = "") %>% names()
   col_names[1] <- "CHR"
   outcome_data <- read.table(temp_output, col.names = col_names)
   
@@ -41,7 +48,10 @@ tee <- function(x) {
 }
 
 
-filter_and_write_exposure_data <- function(data, location_prefix=".", pvalue_threshold, rare_threshold){
+filter_and_write_exposure_data <- function(data,
+                                           location_prefix=".",
+                                           pvalue_threshold,
+                                           rare_threshold) {
   
   data %<>% select(all_of(required_headers))
   
@@ -54,8 +64,8 @@ filter_and_write_exposure_data <- function(data, location_prefix=".", pvalue_thr
   write.table(significant_snps, 
               glue("{location_prefix}exp_significant_SNPs.tsv"), 
               sep = "\t", 
-              row.names = F, 
-              quote = F)
+              row.names = FALSE, 
+              quote = FALSE)
   significant_snps
 }
 
@@ -70,7 +80,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
       Sys.sleep(1)
       read_json(url)$data$spdis[[1]]
     },
-    error = function(e){
+    error = function(e) {
       print("there was an error (1):")
       print(e)
       print("Trying swapping ref and alt")
@@ -128,7 +138,7 @@ get_unknown_rsids_from_locus <- function(gwas, build = "hg19") {
 }
 
 
-merge_rsids_into_gwas <- function(gwas,rsids){
+merge_rsids_into_gwas <- function(gwas,rsids) {
   
   gwas_with_ids <- mutate(gwas, rsid = as.character(rsid)) %>%
     merge(subset(rsids,select = c(CHR, POS, rsid)), all.x = T, by = c("CHR","POS")) %>%
@@ -176,7 +186,7 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
 # token is an access token to the nci API. 
 # if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess
 
-prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){ 
+prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05) { 
   # call LD matrix per each chromosome
   LDPairs <- ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
     if (nrow(x) > 1) {

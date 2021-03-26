@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y curl
 ENV TZ=Asia/Dubai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && apt-get install -y curl libcairo2-dev ghostscript texlive-latex-extra texlive-extra-utils vim less 
+RUN apt-get -qq update && apt-get -qq install -y curl libcairo2-dev ghostscript texlive-latex-extra texlive-extra-utils vim less 
 
 # Install miniconda to /miniconda
 RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -36,4 +36,4 @@ RUN conda env export -n VitaminD_MR > /app/linux_env.yml
 
 
 COPY Dockerfile /app/
-ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "/bin/bash"]
+ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "/bin/bash", "-c"]

@@ -117,7 +117,7 @@ jobs:
           image: ${{ needs.variables.tags.env.branch_tag }} 
           shell: bash
           run: |
-            conda info
+            -c conda info
   test_r_png:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
@@ -130,7 +130,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ needs.variables.tags.env.branch_tag }}  
-          run: /miniconda/condabin/conda run -n VitaminD_MR /bin/bash -c "Rscript -e 'png()' "
+          run: -c "Rscript -e 'png()' "
   test_conda_info_in_env:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
