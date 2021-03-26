@@ -10,10 +10,10 @@ on:
 
 
 jobs:
+  env:
+    dockerhub_repository: vitamin_d_mr_test
+    dockerhub_organization: richardslab
   docker:
-    env:
-      dockerhub_repository: vitamin_d_mr_test
-      dockerhub_organization: richardslab
     runs-on: ubuntu-latest
     steps:
       - name: Show space available
@@ -87,9 +87,7 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.value }}
   test:
-    env:
-      dockerhub_repository: vitamin_d_mr_test
-      dockerhub_organization: richardslab
+    needs: build
     runs-on: ubuntu-latest
     steps:
       -
