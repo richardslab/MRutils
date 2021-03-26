@@ -13,6 +13,10 @@ env:
 jobs:
   variables:
     runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.date.outputs:date }}
+      branch_tag: ${{ steps.tags.env.branch_tag }}
+      tag: ${{ steps.tags.outputs.value }}
     steps:
       - 
         name: Inject slug/short variables
@@ -65,8 +69,9 @@ jobs:
       -
         name: test
         run: |
-          echo ${{ needs.variables.tags.env.branch_tag }}
-          echo ${{ needs.variables.tags.env.branch_tag }}
+          echo ${{ needs.variables.outputs.date }}
+          echo ${{ needs.variables.outputs.tag }}
+          echo ${{ needs.variables.outputs.branch_tag }}
       -
         name: Build and push branch
         uses: docker/build-push-action@v2
