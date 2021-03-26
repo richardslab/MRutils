@@ -14,8 +14,8 @@ jobs:
   variables:
     runs-on: ubuntu-latest
     outputs:
-      date: ${{ steps.date.outputs.date }}
-      branch_tag: ${{ steps.tags.env.branch_tag }}
+      date: ${{ steps.date.outputs.value }}
+      branch_tag: ${{ steps.branch.outputs.value }}
       tag: ${{ steps.tags.outputs.value }}
     steps:
       - 
@@ -24,7 +24,15 @@ jobs:
       -   
         name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "::set-output name=value::$(date +'%Y-%m-%d')"
+      - 
+        name: Get Branch tag
+        id: branch
+        run: echo "::set-output name=value::${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:${{steps.date.outputs.value}}_${{env.GITHUB_REF_SLUG}}"
+      - 
+        name: Get Latest tag
+        id: latest
+        run: echo "::set-output name=value::${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:latest"
       - 
         uses: haya14busa/action-cond@v1
         id: tags
@@ -33,8 +41,8 @@ jobs:
           if_true: ${{env.branch_tag}},${{env.latest}}
           if_false: ${{env.branch_tag}}
         env:
-          branch_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:${{steps.date.outputs.date}}_${{env.GITHUB_REF_SLUG}}
-          latest_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:latest
+          branch_tag: ${{steps.branch.tag.outputs.value}}
+          latest_tag: ${{steps.latest.tag.outputs.value}}
   build_docker:
     needs: variables
     runs-on: ubuntu-latest
