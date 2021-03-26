@@ -8,14 +8,13 @@ on:
     branches:
       - main
 
-
-jobs:
-  env:
+env:
     dockerhub_repository: vitamin_d_mr_test
     dockerhub_organization: richardslab
+jobs:
   docker:
     runs-on: ubuntu-latest
-    steps:
+  steps:
       - name: Show space available
         run: df -h .
       - 
