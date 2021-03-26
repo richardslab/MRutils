@@ -38,11 +38,11 @@ jobs:
         id: tags
         with:
           cond: ${{ env.GITHUB_REF_SLUG == 'main' }}
-          if_true: ${{env.branch_tag}},${{env.latest}}
+          if_true: ${{env.branch_tag}}, ${{env.latest_tag}}
           if_false: ${{env.branch_tag}}
         env:
-          branch_tag: ${{steps.branch.tag.outputs.value}}
-          latest_tag: ${{steps.latest.tag.outputs.value}}
+          branch_tag: ${{steps.branch.outputs.value}}
+          latest_tag: ${{steps.latest.outputs.value}}
   build_docker:
     needs: variables
     runs-on: ubuntu-latest
