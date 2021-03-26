@@ -86,7 +86,7 @@ jobs:
         with:
           context: installation
           push: true
-          tags: ${{ needs.variables.tags.outputs.value }}
+          tags: ${{ needs.variables.outputs.tag }}
   test:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
