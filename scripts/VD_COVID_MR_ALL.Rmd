@@ -6,11 +6,12 @@ params:
   exposure_name: Vitamin D
   prefix: VD_A2
   pop: !r c("CEU", "TSI", "GBR", "IBS")
-  # LDLink_token: "151d285edb97"
-  LDLink_token: "<NEED INPUT>"
+  LDLink_token: "151d285edb97"
+  #LDLink_token: "<NEED INPUT>"
   near_half_threshold: 0.08
   exposure_pvalue_threshold: !r as.numeric("5e-5") #needs !r otherwise it's interpreted as a string....
   MAF_rare_threshold: 0.01
+  prune_r2_threshold: 0.05
   outcome_file: ../raw_data/COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
   results_dir: ../derived_data
 
@@ -202,8 +203,33 @@ Now we need to make sure that we do not have SNPs in high LD next to each other
 
 ```{r prune_snps, cache = TRUE}
 print(glue("pruning using populations: {params$pop}"))
-pruned_combined_snps <- prune_snps(merged_and_combined, population = params$pop, token = params$LDLink_token)
 
+ld_pairs <- get_LD_pairs(merged_and_combined, population = params$pop, token = params$LDLink_token)
+
+ld_pairs %<>% mutate(variable = factor(variable, levels = unique(RS_number)),
+                     RS_number = factor(RS_number, levels = unique(RS_number)))
+
+p = ggplot(ld_pairs) +  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable))
+    
+show(p + aes(fill = value) + labs(fill = expression(R^2), parse = TRUE))
+show(p + aes(fill = value > params$prune_r2_threshold) + labs(fill = expression(R^2>threshold), parse = TRUE))
+
+
+```
+
+```{r }
+list_result <- prune_snps(merged_and_combined, ld_pairs, params$prune_r2_threshold)
+
+pruned_combined_snps <- list_result$rsids
+removed_rsids <- list_result$removed_rsid
+
+ggplot(ld_pairs) +  
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable)) +
+  aes(fill = value > params$prune_r2_threshold, alpha= ifelse(RS_number %in% removed_rsids | variable %in% removed_rsids, 0.1,1)) + 
+  labs(fill = expression(R^2>threshold), alpha = "variant removed", parse = TRUE)
+ 
+print(glue_collapse( c( glue("Removed {length(removed_rsids)} snps due to high LD (removed): "),glue("{removed_rsids} "))))
 print(glue("Total number of SNPs for use in 2-Sample MR (pruned): {nrow(pruned_combined_snps)}."))
 
 write.table(pruned_combined_snps, file = glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"), sep = '\t', quote = F, row.names = F)

@@ -186,37 +186,33 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
 # token is an access token to the nci API. 
 # if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess
 
-prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05) { 
+get_LD_pairs <- function(rsids_and_chr, population, token) { 
   # call LD matrix per each chromosome
-  LDPairs <- ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
+  LD_pairs <- ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
     if (nrow(x) > 1) {
       LDmatrix(x$rsid, pop = population, token, r2d = "r2") %>%  melt(id.vars = "RS_number")
     }
   })
+  LD_pairs
+}
+
+prune_snps <- function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
   
-  LDpairs_culled <- LDPairs
-  
+  LDpairs_culled <- ld_pairs
   pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
-  removed <- head(pairs, n = 0)
+  removed <- c()
   while (nrow(pairs) > 0) {
     ##TODO: make sure to keep snps with smaller P value.....
-    to_remove <- pairs[which.max(pairs$value), "variable"] %>% as.character()
-    removed <- rbind(removed,pairs[which.max(pairs$value),])
+    to_remove <- names(which.max(table(c(as.character(pairs$RS_number),as.character(pairs$variable)))))
+    # to_remove <- pairs[which.max(pairs$value), "variable"] %>% as.character()
+    removed <- c(removed, to_remove)
     
     LDpairs_culled <- subset(LDpairs_culled, variable != to_remove & RS_number != to_remove)
     pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
   }
-  print(glue("Removed {nrow(removed)} snps due to high LD (removing variable):"))
-  print(removed)
   
-  #TODO: figure out why there are duplicates in the SNP data...probably some merge...
-
-  print(nrow(LDpairs_culled$RS_number %>% unique()))
-  print(nrow(LDpairs_culled$variable %>% unique()))
-  
-  subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique()))
-
-    
+  list(rsids = subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique())), 
+       removed_rsid = removed)
 }
 
 # expecting replacement string on the form "A=B,C=D" meaning that
