@@ -115,9 +115,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ needs.variables.tags.env.branch_tag }} 
-          shell: bash
-          run: |
-            -c conda info
+          run: "conda info"
   test_r_png:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
@@ -130,8 +128,8 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ needs.variables.tags.env.branch_tag }}  
-          run: -c "Rscript -e 'png()' "
-  test_conda_info_in_env:
+          run: "Rscript -e 'png()' "
+  test_r_2SMR:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
     steps:
@@ -139,9 +137,12 @@ jobs:
         name: Show space available
         run: df -h .          
       -
-        name: run docker test conda info
+        name: run docker test two-sample-mr
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ needs.variables.tags.env.branch_tag }} 
           shell: /bin/bash
-          run: conda run -n VitaminD_MR /bin/bash -c "conda info"
+          run: "Rscript -e 'library(TwoSampleMR)'"
+
+
+
