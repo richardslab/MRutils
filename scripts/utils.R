@@ -188,12 +188,15 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
 
 get_LD_pairs <- function(rsids_and_chr, population, token) { 
   # call LD matrix per each chromosome
-  LD_pairs <- ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
+  ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
     if (nrow(x) > 1) {
       LDmatrix(x$rsid, pop = population, token, r2d = "r2") %>%  melt(id.vars = "RS_number")
+    } else {
+      temp <- data.frame(RS_number = as.character(x$rsid[1]), X = 1)
+      names(temp)[2] <- as.character(x$rsid[1])
+      temp %>% melt(id.vars = "RS_number")
     }
   })
-  LD_pairs
 }
 
 prune_snps <- function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
@@ -216,8 +219,8 @@ prune_snps <- function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
 }
 
 # expecting replacement string on the form "A=B,C=D" meaning that
-# B will be replaced with A and
-# D will be replaced with C
+# A will be replaced with B and
+# C will be replaced with D
 
 replace_alleles <- function(alleles, replacement_string) {
   
@@ -226,13 +229,15 @@ replace_alleles <- function(alleles, replacement_string) {
     {purrr::transpose(.l = .)} %>% 
     do.call(what = rbind)
   
-  replace <- unlist(allele_matrix[1,])
-  pattern <- unlist(allele_matrix[2,])
+  replace <- unlist(allele_matrix[2,])
+  pattern <- unlist(allele_matrix[1,])
   
   a <- alleles %>% sapply(function(x) mgsub(as.character(x), pattern = pattern, replacement = replace))
   a
 }
 
+
+all(replace_alleles(list("C","G"),"C=A,G=T") == list("A","T"))
 
 
 find_duplicate_snps <- function(gwas) {

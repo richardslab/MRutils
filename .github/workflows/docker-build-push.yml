@@ -103,7 +103,7 @@ jobs:
           push: true
           tags: ${{ needs.variables.outputs.tag }}
           builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-from: type=local,mode=max,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
   test_conda_info:
     needs: [variables,build_docker]
@@ -113,10 +113,12 @@ jobs:
         run: df -h .
       -
         name: test running in docker
-        uses: addnab/docker-run-action@v3
+        uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.tags.env.branch_tag }} 
-          run: "'conda info'"
+          run: conda info
+          shell:
+          precommand_prefix:  
   test_r_png:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
@@ -126,10 +128,12 @@ jobs:
         run: df -h .
       -
         name: run docker test png
-        uses: addnab/docker-run-action@v3
+        uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.tags.env.branch_tag }}  
-          run: "Rscript -e 'png()' "
+          run: Rscript -e 'png()'
+          shell:
+          precommand_prefix:  
   test_r_2SMR:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
@@ -139,11 +143,12 @@ jobs:
         run: df -h .          
       -
         name: run docker test two-sample-mr
-        uses: addnab/docker-run-action@v3
+        uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.tags.env.branch_tag }} 
-          shell: /bin/bash
-          run: "Rscript -e 'library(TwoSampleMR)'"
+          shell: 
+          precommand_prefix:  
+          run: Rscript -e 'library(TwoSampleMR)'
 
 
 

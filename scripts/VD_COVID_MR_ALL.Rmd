@@ -41,6 +41,8 @@ for (i in names(params)) {
     print(glue("{i} = [redacted]"))
 }
 
+incompatible=c("rs10832311","rs7412")
+
 ```
 
 
@@ -126,6 +128,7 @@ merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
                           by = c("rsid", "CHR", "POS"), 
                           all.x = T,
                           )
+subset(merged_exp_and_out, rsid %in% incompatible)
 
 print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_out%>%subset(is.na(beta.out)))} variants lacking 'beta.out', and {nrow(merged_exp_and_out)} variants overall."))
 ```
@@ -142,6 +145,8 @@ print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$qu
 #subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome
 proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
 
+subset(proxies_in_outcome,rsid %in% incompatible)
+
 proxies <- proxies_raw %>% subset(rsid %in% proxies_in_outcome$rsid)
 
 print(glue("{nrow(proxies)} proxies (of {nrow(proxies_raw)}) were found in the outcome...."))
@@ -151,11 +156,6 @@ print(glue("{nrow(proxies)} proxies (of {nrow(proxies_raw)}) were found in the o
 # merge proxies with exposure
 exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
 print(glue("...and {nrow(exposure_and_proxies)} proxies were successfully merged with the exposure."))
-
-missing <- c("rs7718395", "rs3822868", "rs10887718", "rs8018720", "rs2909218", "rs2229742")
-
-missing %in% significant_snps$rsid
-missing %in% exposure_and_proxies$rsid
 
 # remove chimeric snps and then the smallest P
 proxies_with_exposure <- exposure_and_proxies %>% 
@@ -171,20 +171,28 @@ proxies_with_exposure <- exposure_and_proxies %>%
 
 print(glue("After removing ambiguous snps and choosing the most linked SNP for every query, {nrow(proxies_with_exposure)} proxies remain."))
 
+subset(proxies_with_exposure,rsid %in% incompatible,select=c("Alleles","Correlated_Alleles","rsid","EA","NEA"))
 
+with(proxies_with_exposure, Alleles==glue("({EA}/{NEA})") |Alleles==glue("({NEA}/{EA})"))
+subset(proxies_with_exposure,select=c(Alleles,Correlated_Alleles,rsid,EA,NEA))
 ```
 
 
 ```{r fix-proxy-alleles}
 
 fixed_proxies_with_exposure <- adply(proxies_with_exposure, 1, function(x) {
-  replace_alleles(list(x$Alleles, x$EA, x$NEA), x$Correlated_Alleles) %>%
+  replace_alleles(list(x$EA, x$NEA), x$Correlated_Alleles) %>%
     {
-  data.frame(Alleles = .[1],
-    EA = .[2],
-    NEA = .[3]
+  data.frame(
+    EA = .[1],
+    NEA = .[2]
     )}
   })
+
+if (!all(with(fixed_proxies_with_exposure, Alleles == glue("({EA}/{NEA})") | Alleles == glue("({NEA}/{EA})")))) {
+  warn("there was a problem fixing the alleles")
+  subset(fixed_proxies_with_exposure, rsid %in% incompatible, select = c("Alleles", "Correlated_Alleles", "rsid", "EA", "NEA"))
+}
 
 
 ```
@@ -202,7 +210,6 @@ merged_with_proxies <- merge(proxies_in_outcome,
 merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(MAF.out))
 print(glue("Total number of SNPs for use in 2-Sample MR (prior to pruning): {nrow(merged_and_combined)}."))
 
-missing %in% merged_and_combined$rsid
 
 
 ```
@@ -212,10 +219,12 @@ Now we need to make sure that we do not have SNPs in high LD next to each other
 ```{r prune_snps, cache = TRUE}
 print(glue("pruning using populations: {params$pop}"))
 
-ld_pairs <- get_LD_pairs(merged_and_combined, population = params$pop, token = params$LDLink_token)
+ld_pairs_raw <- get_LD_pairs(merged_and_combined, population = params$pop, token = params$LDLink_token)
 
-ld_pairs %<>% mutate(variable = factor(variable, levels = unique(RS_number)),
-                     RS_number = factor(RS_number, levels = unique(RS_number)))
+unique_rsids <- with(ld_pairs_raw, unique(c(as.character(RS_number), as.character(variable))))
+ld_pairs <- ld_pairs_raw %>% mutate(
+  variable = factor(variable, levels = unique_rsids),
+  RS_number = factor(RS_number, levels = unique_rsids))
 
 p = ggplot(ld_pairs) +  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable))
     
@@ -232,10 +241,6 @@ list_result <- prune_snps(merged_and_combined, ld_pairs, params$prune_r2_thresho
 pruned_combined_snps <- list_result$rsids
 removed_rsids <- list_result$removed_rsid
 
-missing %in% merged_and_combined$rsid
-missing %in% pruned_combined_snps$rsid
-
-
 ggplot(ld_pairs) +  
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable)) +
@@ -243,7 +248,8 @@ ggplot(ld_pairs) +
   labs(fill = expression(R^2>threshold), alpha = "variant removed", parse = TRUE) + 
   scale_alpha_manual(values = c(0.3, 1), breaks = c(TRUE, FALSE))
  
-print(glue_collapse( c( glue("Removed {length(removed_rsids)} snps due to high LD (removed): "),glue("{removed_rsids} "))))
+print(glue("Removed {length(removed_rsids)} snps due to high LD (removed): "))
+print(glue_collapse(glue("{removed_rsids} ")))
 print(glue("Total number of SNPs for use in 2-Sample MR (pruned): {nrow(pruned_combined_snps)}."))
 
 write.table(pruned_combined_snps, file = glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"), sep = '\t', quote = F, row.names = F)
@@ -252,7 +258,6 @@ write.table(pruned_combined_snps, file = glue("{params$results_dir}/{params$pref
 ```{r get MR results}
 results <- get_2smr_results(glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"))
 ```
-
 ```{r show results}
 
 for (p in results) {
