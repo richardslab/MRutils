@@ -19,7 +19,7 @@ RUN conda update -y conda
 WORKDIR /app
 
 # Make RUN commands use `bash --login`:
-SHELL ["/bin/bash", "--login"]
+#SHELL ["/bin/bash", "--login"]
 
 COPY create_env.sh environment.yaml /app/
 RUN ./create_env.sh
@@ -35,7 +35,7 @@ RUN conda env export -n VitaminD_MR > /app/linux_env.yml
 
 
 COPY Dockerfile /app/
-COPY entrypoint.sh /usr/local/bin/
-#ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "/bin/bash", "-c"]
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "/bin/bash", "-c"]
+
 CMD ["/bin/bash"]
