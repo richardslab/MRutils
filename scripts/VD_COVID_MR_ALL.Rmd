@@ -31,6 +31,7 @@ require(dplyr)
 require(readxl)
 require(glue)
 require(magrittr)
+require(ggplot2)
 
 source("utils.R")
 
