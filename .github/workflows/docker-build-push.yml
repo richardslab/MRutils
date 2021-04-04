@@ -146,9 +146,9 @@ jobs:
         run: echo $file > file.R
         env:
           file: |
-            library(ggplot2);
-            png("/work/diamonds.png");
-            ggplot(diamonds) + geom_point(aes(x=carat,y=price,color=clarity));
+            library(ggplot2)
+            png("/work/diamonds.png")
+            ggplot(diamonds) + geom_point(aes(x=carat,y=price,color=clarity))
             dev.off()
       -
         name: Show file available
@@ -203,7 +203,7 @@ jobs:
           shell: 
           precommand_prefix: 
           options: -v ${{ github.workspace }}:/work 
-          run: |
+          run: >
             Rscript /work/scripts/knit.R 
               -t ${{ secrets.LD_LINK_TOKEN }} 
               -i /work/scripts/VD_COVID_MR_ALL.Rmd 
