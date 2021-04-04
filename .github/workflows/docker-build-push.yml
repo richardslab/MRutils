@@ -113,7 +113,7 @@ jobs:
         run: df -h .
       -
         name: test running in docker
-        uses: yfarjoun/docker-run-action@main
+        uses: yfarjoun/docker-run-action@yf_debug_info
         with:
           image: ${{ needs.variables.tags.env.branch_tag }} 
           run: conda info
