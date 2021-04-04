@@ -20,15 +20,15 @@ parser$add_argument("-o", "--output-file",
                     help = "Output filename",
                     default = NULL,
                     metavar = "Rmd report")
-
+  
 
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults, 
 args <- parser$parse_args()
 
 rmarkdown::render(
-  input = args$input_file, 
-  output_format = 'pdf_document', 
-	params = list(LDLink_token = args$token), 
-	output_file = args$output_file
+  input = args$input_file,
+  output_format = "pdf_document",
+  params = list(LDLink_token = args$token),
+  output_file = args$output_file
   )
