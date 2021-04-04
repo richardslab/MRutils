@@ -145,9 +145,9 @@ jobs:
         name: create input files
         run: echo $file > file.R
         env:
-          file: >
+          file: |
             library(ggplot2);
-            png("diamonds.png");
+            png("/work/diamonds.png");
             ggplot(diamonds) + geom_point(aes(x=carat,y=price,color=clarity));
             dev.off()
       -
@@ -167,7 +167,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: diamonds_png
-          path: /work/diamonds.png
+          path: diamonds.png
           if-no-files-found: error
           retention-days: 30
   test_r_2SMR:
