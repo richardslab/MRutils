@@ -1,6 +1,10 @@
 name: R and Python Package using Conda and mamba
 
-on: [push]
+on: 
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   testStepsAndLint:
@@ -20,6 +24,9 @@ jobs:
           channels: conda-forge,r,bioconda,defaults,anaconda
           channel-priority: true
           environment-file: installation/environment.yaml
+      - name: post-conda-steps
+        run: |
+          installation/post_conda_steps.sh 
       - name: Conda info
         run: |
           conda info --envs
@@ -27,10 +34,6 @@ jobs:
           conda config --show-sources
           conda config --show
           printenv | sort
-      - name: post-conda-steps
-        run: |
-          conda activate VitaminD_MR
-          R --no-save < installation/post_conda_steps.R 
       - name: test-r-libraries
         run: |
           conda activate VitaminD_MR

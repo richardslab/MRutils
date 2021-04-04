@@ -1,16 +1,22 @@
 name: docker-build-push
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
-
+  push:
+    branches:
+      - main
+env:
+    dockerhub_repository: vitamin_d_mr_test
+    dockerhub_organization: richardslab
 jobs:
-  docker:
-    env:
-      dockerhub_repository: vitamin_d_mr_test
-      dockerhub_organization: richardslab
+  variables:
     runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.date.outputs.value }}
+      branch_tag: ${{ steps.branch.outputs.value }}
+      tag: ${{ steps.tags.outputs.value }}
     steps:
       - 
         name: Inject slug/short variables
@@ -18,36 +24,131 @@ jobs:
       -   
         name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "::set-output name=value::$(date +'%Y-%m-%d')"
+      - 
+        name: Get Branch tag
+        id: branch
+        run: echo "::set-output name=value::${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:${{steps.date.outputs.value}}_${{env.GITHUB_REF_SLUG}}"
+      - 
+        name: Get Latest tag
+        id: latest
+        run: echo "::set-output name=value::${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:latest"
       - 
         uses: haya14busa/action-cond@v1
         id: tags
         with:
           cond: ${{ env.GITHUB_REF_SLUG == 'main' }}
-          if_true: ${{env.branch_tag}},${{env.latest}}
+          if_true: ${{env.branch_tag}}, ${{env.latest_tag}}
           if_false: ${{env.branch_tag}}
         env:
-          branch_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:${{steps.date.outputs.date}}_${{env.GITHUB_REF_SLUG}}
-          latest_tag: ${{env.dockerhub_organization}}/${{env.dockerhub_repository}}:latest
+          branch_tag: ${{steps.branch.outputs.value}}
+          latest_tag: ${{steps.latest.outputs.value}}
+  build_docker:
+    needs: variables
+    runs-on: ubuntu-latest
+    steps:
       -
         name: Checkout
         uses: actions/checkout@v2
+      - 
+        name: Show space available
+        run: df -h .
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+      - 
+        name: Show space available
+        run: df -h .
       -
         name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v1
+      - 
+        name: Show space available
+        run: df -h .
+      - 
+        name: Get hash key for cache
+        id: hash
+        uses: theowenyoung/folder-hash@v2.0.1
+        with:
+          path: installation
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ steps.hash.outputs.hash }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       -
         name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - 
+        name: Show space available
+        run: df -h .
+      -
+        name: Show variables
+        run: |
+          echo date = ${{ needs.variables.outputs.date }}
+          echo tags = ${{ needs.variables.outputs.tag }}
+          echo branch = ${{ needs.variables.outputs.branch_tag }}
+          echo hash = ${{ steps.hash.outputs.hash }}
       -
         name: Build and push branch
         uses: docker/build-push-action@v2
         with:
           context: installation
           push: true
-          tags: ${{ steps.tags.outputs.value }}
+          tags: ${{ needs.variables.outputs.tag }}
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=local,mode=max,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+  test_conda_info:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show space available
+        run: df -h .
+      -
+        name: test running in docker
+        uses: yfarjoun/docker-run-action@yf_debug_info
+        with:
+          image: ${{ needs.variables.outputs.branch_tag }}
+          run: conda info
+          shell:
+          precommand_prefix:  
+  test_r_png:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Show space available
+        run: df -h .
+      -
+        name: run docker test png
+        uses: yfarjoun/docker-run-action@main
+        with:
+          image: ${{ needs.variables.outputs.branch_tag }}
+          run: Rscript -e 'png()'
+          shell:
+          precommand_prefix:  
+  test_r_2SMR:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Show space available
+        run: df -h .          
+      -
+        name: run docker test two-sample-mr
+        uses: yfarjoun/docker-run-action@main
+        with:
+          image: ${{ needs.variables.outputs.branch_tag }}
+          shell: 
+          precommand_prefix:  
+          run: Rscript -e 'library(TwoSampleMR)'
+
+
+

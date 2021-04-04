@@ -9,34 +9,64 @@ require(TwoSampleMR)
 require(mgsub)
 require(purrr)
 
+required_headers <- 
+  c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
 
-#it is expected that snps has two columns 'CHR' and 'POS' indicating the chromosome and 
-# the  (1-based) position of the snp in question.
 
-extract_snps_from_bgzip <- function(outcome, snps, chr_col = 1, pos_col = 2, comment_char = "#") {
+# it is expected that snps has two columns 'CHR' and 'POS' 
+# indicating the chromosome and the  (1-based) position of the snp in question.
+
+extract_snps_from_bgzip <- 
+  function(outcome, snps, chr_col = 1, pos_col = 2, comment_char = "#") {
   #nolint (unused variable)
   region <- snps %>% 
     alply(1, function(x) with(x, glue("{CHR}:{POS}-{POS}"))) %>% 
-    {do.call(paste, .)}
+    { do.call(paste, .) }
   
-  temp_output <- tempfile(pattern = "subsetted_exposure__", tmpdir = tempdir(), fileext = ".txt")
-  # print(glue("temp outputfile is: {temp_output}"))
-  cmd <- glue("tabix -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
-  # print(cmd)
+  temp_output <- tempfile(pattern = "subsetted_exposure__", 
+                          tmpdir = tempdir(), 
+                          fileext = ".txt")
+ 
+  cmd <- glue("tabix -f -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
   system(cmd)
-  col_names <- read.table(outcome, header = T, nrows = 1, comment.char = "") %>% names()
-  # print(col_names)
+  col_names <- read.table(outcome, 
+                          header = TRUE, 
+                          nrows = 1, 
+                          comment.char = "") %>% names()
   col_names[1] <- "CHR"
   outcome_data <- read.table(temp_output, col.names = col_names)
-  #file.remove(temp_output)
   
   outcome_data
 }
+
+chimeric <- c("(A/T)", "(T/A)", "(C/G)", "(G/C)")
 
 
 tee <- function(x) {
   print(x)
   x
+}
+
+
+filter_and_write_exposure_data <- function(data,
+                                           location_prefix=".",
+                                           pvalue_threshold,
+                                           rare_threshold) {
+  
+  data %<>% select(all_of(required_headers))
+  
+  write.table(data, glue("{location_prefix}exp_extracted_SNPs.tsv"), 
+              sep = "\t", 
+              row.names = FALSE, 
+              quote = FALSE)
+  
+  significant_snps = data %>% subset(P < pvalue_threshold & MAF >= rare_threshold) 
+  write.table(significant_snps, 
+              glue("{location_prefix}exp_significant_SNPs.tsv"), 
+              sep = "\t", 
+              row.names = FALSE, 
+              quote = FALSE)
+  significant_snps
 }
 
 
@@ -50,7 +80,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
       Sys.sleep(1)
       read_json(url)$data$spdis[[1]]
     },
-    error = function(e){
+    error = function(e) {
       print("there was an error (1):")
       print(e)
       print("Trying swapping ref and alt")
@@ -108,7 +138,7 @@ get_unknown_rsids_from_locus <- function(gwas, build = "hg19") {
 }
 
 
-merge_rsids_into_gwas <- function(gwas,rsids){
+merge_rsids_into_gwas <- function(gwas,rsids) {
   
   gwas_with_ids <- mutate(gwas, rsid = as.character(rsid)) %>%
     merge(subset(rsids,select = c(CHR, POS, rsid)), all.x = T, by = c("CHR","POS")) %>%
@@ -122,7 +152,7 @@ merge_rsids_into_gwas <- function(gwas,rsids){
 `%notin%` <- Negate(`%in%`)
 
 
-get_proxies <- function(rsids, token, population, results_dir = "derived_data", skip_api = FALSE, r2_threshold = 0.9) {
+get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE, r2_threshold = 0.9) {
   
   current_dir <- getwd()
   setwd(results_dir)
@@ -156,46 +186,58 @@ get_proxies <- function(rsids, token, population, results_dir = "derived_data", 
 # token is an access token to the nci API. 
 # if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess
 
-prune_snps <- function(rsids_and_chr, population, token, r2_threshold = 0.05){ 
+get_LD_pairs <- function(rsids_and_chr, population, token) { 
   # call LD matrix per each chromosome
-  LDPairs <- ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
+  ddply(rsids_and_chr, .progress = "text", .variables = .(CHR), function(x) {
     if (nrow(x) > 1) {
       LDmatrix(x$rsid, pop = population, token, r2d = "r2") %>%  melt(id.vars = "RS_number")
+    } else {
+      temp <- data.frame(RS_number = as.character(x$rsid[1]), X = 1)
+      names(temp)[2] <- as.character(x$rsid[1])
+      temp %>% melt(id.vars = "RS_number")
     }
   })
+}
+
+prune_snps <- function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
   
-  LDpairs_culled <- LDPairs
-  
+  LDpairs_culled <- ld_pairs
   pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
+  removed <- c()
   while (nrow(pairs) > 0) {
     ##TODO: make sure to keep snps with smaller P value.....
-    to_remove <- pairs[which.max(pairs$value), "variable"] %>% as.character()
+    to_remove <- names(which.max(table(c(as.character(pairs$RS_number),as.character(pairs$variable)))))
+    # to_remove <- pairs[which.max(pairs$value), "variable"] %>% as.character()
+    removed <- c(removed, to_remove)
+    
     LDpairs_culled <- subset(LDpairs_culled, variable != to_remove & RS_number != to_remove)
     pairs <- subset(LDpairs_culled, value >= r2_threshold & as.character(RS_number) != as.character(variable))
   }
   
-  #TODO: figure out why there are duplicates in the SNP data...probably some merge...
-  subset(rsids_and_chr, rsid %in% (LDpairs_culled$RS_number %>% unique()))
-
+  list(rsids = subset(rsids_and_chr, rsid %notin% removed), 
+       removed_rsid = removed)
 }
 
 # expecting replacement string on the form "A=B,C=D" meaning that
-# B will be replaced with A and
-# D will be replaced with C
+# A will be replaced with B and
+# C will be replaced with D
 
 replace_alleles <- function(alleles, replacement_string) {
   
-  allele_matrix = strsplit(replacement_string, ",", fixed = T)[[1]] %>% 
+  allele_matrix <- strsplit(as.character(replacement_string), ",", fixed = T)[[1]] %>% 
   {llply(strsplit(x = ., split = "=", fixed = T))} %>% 
     {purrr::transpose(.l = .)} %>% 
     do.call(what = rbind)
   
-  replace = allele_matrix[1,]
-  pattern = allele_matrix[2,]
+  replace <- unlist(allele_matrix[2,])
+  pattern <- unlist(allele_matrix[1,])
   
-  alleles %>% sapply(function(x) mgsub(x,pattern = pattern, replacement = replace))
+  a <- alleles %>% sapply(function(x) mgsub(as.character(x), pattern = pattern, replacement = replace))
+  a
 }
 
+
+all(replace_alleles(list("C","G"),"C=A,G=T") == list("A","T"))
 
 
 find_duplicate_snps <- function(gwas) {
@@ -218,7 +260,7 @@ get_2smr_results <- function(preprocessed_snps){
   
   outcome <- read_outcome_data(preprocessed_snps,
                                sep = '\t',
-                               snp_col="rsid",
+                               snp_col = "rsid",
                                beta_col = "beta.out",
                                se_col = "SE.out",
                                eaf_col = "EAF.out",
@@ -228,12 +270,22 @@ get_2smr_results <- function(preprocessed_snps){
   
   harmonized = harmonise_data(exposure, outcome)
   regressed <- mr(dat = harmonized)
+  
   single_snp_results <- mr_singlesnp(harmonized)
+  
+  leave_one_out <- mr_leaveoneout(harmonized)
   
   list(data = harmonized,
        regressed = regressed,
        single_snp = single_snp_results,
+       heterogeneity = mr_heterogeneity(harmonized),
+       pleiotropy = mr_pleiotropy_test(harmonized),
+       forest_plot = mr_forest_plot(single_snp_results),
+       funnel_plot = mr_funnel_plot(single_snp_results),
        density_plot = mr_density_plot(single_snp_results, regressed),
-       scatter_plot = mr_scatter_plot(regressed, harmonized))
+       scatter_plot = mr_scatter_plot(regressed, harmonized),
+       leave_one_out = leave_one_out,
+       leave_one_out_plot = mr_leaveoneout_plot(leave_one_out)
+  )
 }
 
