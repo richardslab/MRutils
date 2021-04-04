@@ -149,6 +149,29 @@ jobs:
           shell: 
           precommand_prefix:  
           run: Rscript -e 'library(TwoSampleMR)'
-
+Run_Vitamin_D_2SMR:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Show files available
+        run: ls scripts    
+      -
+        name: Run Vitamin D two-sample-mr
+        uses: yfarjoun/docker-run-action@main
+        with:
+          image: ${{ needs.variables.outputs.branch_tag }}
+          shell: 
+          precommand_prefix:  
+          run: Rscript scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i scripts/VD_COVID_MR_ALL.Rmd -o scripts/VD_COVID_MR_ALL.pdf
+      -
+        name: Show files available
+        run: ls scripts
+      - uses: actions/upload-artifact@v2
+        with:
+          name: report_pdf
+          path: scripts/VD_COVID_MR_ALL.pdf
+          if-no-files-found: error
+          retention-days: 60
 
 
