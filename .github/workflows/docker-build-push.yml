@@ -141,19 +141,25 @@ jobs:
       -
         name: Show space available
         run: df -h .
+      - 
+        name: create input files
+        run: echo $file > file.R
+        env:
+          file: |
+            png("diamonds.png")  
+            ggplot(diamonds) + geom_point(aes(x=carat,y=price,color=clarity)) 
+            dev.off()
       -
         name: run docker test png
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
+          options: -v ${{ github.workspace }}:/work
           run: >
-            Rscript -e 'png("diamonds.png"); 
-            ggplot(diamonds) + geom_point(aes(x=carat,y=price,color=clarity)); 
-            dev.off()'
+            Rscript /work/file.R
           shell:
           precommand_prefix: 
-          options: -v ${{ github.workspace }}:/work
-          
+            
       - uses: actions/upload-artifact@v2
         with:
           name: diamonds_png
@@ -190,17 +196,16 @@ jobs:
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          options: -v ${{ github.workspace }}:/work
           shell: 
           precommand_prefix:  
-          run: Rscript scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
+          run: Rscript $GITHUB_WORKSPACE/scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i $GITHUB_WORKSPACE/scripts/VD_COVID_MR_ALL.Rmd -o $GITHUB_WORKSPACE/scripts/VD_COVID_MR_ALL.pdf
       -
         name: Show files available
         run: ls scripts
       - uses: actions/upload-artifact@v2
         with:
           name: report_pdf
-          path: /work/scripts/VD_COVID_MR_ALL.pdf
+          path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
           if-no-files-found: error
           retention-days: 60
 
