@@ -159,8 +159,7 @@ jobs:
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           options: -v ${{ github.workspace }}:/work
-          run: >
-            Rscript /work/file.R
+          run: Rscript /work/file.R
           shell:
           precommand_prefix: 
             
@@ -203,11 +202,7 @@ jobs:
           shell: 
           precommand_prefix: 
           options: -v ${{ github.workspace }}:/work 
-          run: >
-            Rscript /work/scripts/knit.R 
-              -t ${{ secrets.LD_LINK_TOKEN }} 
-              -i /work/scripts/VD_COVID_MR_ALL.Rmd 
-              -o /work/scripts/VD_COVID_MR_ALL.pdf
+          run: Rscript /work/scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
       -
         name: Show files available
         run: ls scripts
