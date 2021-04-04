@@ -115,7 +115,7 @@ jobs:
         name: test running in docker
         uses: yfarjoun/docker-run-action@yf_debug_info
         with:
-          image: ${{ needs.variables.tags.env.branch_tag }} 
+          image: ${{ needs.variables.outputs.branch_tag }}
           run: conda info
           shell:
           precommand_prefix:  
@@ -130,7 +130,7 @@ jobs:
         name: run docker test png
         uses: yfarjoun/docker-run-action@main
         with:
-          image: ${{ needs.variables.tags.env.branch_tag }}  
+          image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'png()'
           shell:
           precommand_prefix:  
@@ -145,7 +145,7 @@ jobs:
         name: run docker test two-sample-mr
         uses: yfarjoun/docker-run-action@main
         with:
-          image: ${{ needs.variables.tags.env.branch_tag }} 
+          image: ${{ needs.variables.outputs.branch_tag }}
           shell: 
           precommand_prefix:  
           run: Rscript -e 'library(TwoSampleMR)'
