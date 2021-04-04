@@ -198,18 +198,16 @@ jobs:
       -
         name: Run Vitamin D two-sample-mr
         uses: yfarjoun/docker-run-action@main
-        env:
-           GITHUB_WORKSPACE: /work
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           shell: 
           precommand_prefix: 
-          options: -v ${{ github.workspace }}:$GITHUB_WORKSPACE 
+          options: -v ${{ github.workspace }}:/work 
           run: |
-            Rscript $GITHUB_WORKSPACE/scripts/knit.R 
+            Rscript /work/scripts/knit.R 
               -t ${{ secrets.LD_LINK_TOKEN }} 
-              -i $GITHUB_WORKSPACE/scripts/VD_COVID_MR_ALL.Rmd 
-              -o $GITHUB_WORKSPACE/scripts/VD_COVID_MR_ALL.pdf
+              -i /work/scripts/VD_COVID_MR_ALL.Rmd 
+              -o /work/scripts/VD_COVID_MR_ALL.pdf
       -
         name: Show files available
         run: ls scripts
