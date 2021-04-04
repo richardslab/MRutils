@@ -134,6 +134,32 @@ jobs:
           run: Rscript -e 'png()'
           shell:
           precommand_prefix:  
+  test_r_ggplot:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Show space available
+        run: df -h .
+      -
+        name: run docker test png
+        uses: yfarjoun/docker-run-action@main
+        with:
+          image: ${{ needs.variables.outputs.branch_tag }}
+          run: >
+            Rscript -e 'png("diamonds.png"); 
+            ggplot(diamonds) + geom_point(aes(x=carat,y=price,color=clarity)); 
+            dev.off()'
+          shell:
+          precommand_prefix: 
+          options: -v ${{ github.workspace }}:/work
+          
+      - uses: actions/upload-artifact@v2
+        with:
+          name: diamonds_png
+          path: /work/diamonds.png
+          if-no-files-found: error
+          retention-days: 30
   test_r_2SMR:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
@@ -154,23 +180,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
         name: Show files available
-        run: ls scripts    
+        run: ls ${{ github.workspace }}/scripts    
       -
         name: Run Vitamin D two-sample-mr
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
+          options: -v ${{ github.workspace }}:/work
           shell: 
           precommand_prefix:  
-          run: Rscript scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i scripts/VD_COVID_MR_ALL.Rmd -o scripts/VD_COVID_MR_ALL.pdf
+          run: Rscript scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
       -
         name: Show files available
         run: ls scripts
       - uses: actions/upload-artifact@v2
         with:
           name: report_pdf
-          path: scripts/VD_COVID_MR_ALL.pdf
+          path: /work/scripts/VD_COVID_MR_ALL.pdf
           if-no-files-found: error
           retention-days: 60
 
