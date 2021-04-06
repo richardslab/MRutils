@@ -1,4 +1,0 @@
-X.
-1	  error: rs187443664 is monoallelic in the CEU+TSI+GBR+IBS population.,
-2	  traceback: Traceback (most recent call last):\n  File \/analysistools/public_html/apps/LDlink/app/LDlink.py\, line 885, in ldproxy\n    with open('./tmp/proxy' + reference + '.txt', \r\) as fp:\nFileNotFoundError: [Errno 2] No such file or directory: './tmp/proxy0325392903.txt'\n
-3	}
