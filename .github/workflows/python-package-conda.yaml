@@ -5,18 +5,21 @@ on:
   push:
     branches:
       - main
-
 jobs:
   testStepsAndLint:
     name: Build Environment using Mamba
     runs-on: "ubuntu-latest"
+    env: 
+      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
+      RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
     defaults:
       run:
         shell: bash -l {0}
-
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - 
+        uses: actions/checkout@v2
+      - 
+        uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.6
           activate-environment: VitaminD_MR
@@ -24,17 +27,62 @@ jobs:
           channels: conda-forge,r,bioconda,defaults,anaconda
           channel-priority: true
           environment-file: installation/environment.yaml
-      - name: post-conda-steps
+      - 
+        name: post-conda-steps
         run: |
           installation/post_conda_steps.sh 
-      - name: Conda info
+      -   
+        name: Conda info
         run: |
           conda info --envs
           conda list -n VitaminD_MR
           conda config --show-sources
           conda config --show
           printenv | sort
-      - name: test-r-libraries
+      - 
+        name: test-r-libraries
         run: |
           conda activate VitaminD_MR
           R -e 'library(TwoSampleMR); library(LDlinkR);'
+      - 
+        name: test-r-libraries
+        run: |
+          conda run -n VitaminD_MR Rscript -e 'library(TwoSampleMR); library(LDlinkR);'
+      - 
+        name: get raw data For test
+        run: |
+          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}"     > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
+          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
+      - 
+        name: put LD Link token into a file
+        run: echo ${{ secrets.LD_LINK_TOKEN }} > ${{ github.workspace }}/LD_LINK_TOKEN
+      -
+        name: Show files available
+        run: ls -ltrR ${{ github.workspace }}
+      -
+        name: Run Vitamin D two-sample-mr in conda environment
+        run: >
+          conda run -n VitaminD_MR 
+          Rscript /work/scripts/knit.R 
+          -i /work/scripts/VD_COVID_MR_ALL.Rmd 
+          -o /work/scripts/VD_COVID_MR_ALL.pdf
+      -
+        name: Show files available
+        if: ${{ always() }}
+        run: ls -ltrR
+      - 
+        uses: actions/upload-artifact@v2
+        with:
+          name: report_pdf
+          path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
+          if-no-files-found: error
+          retention-days: 60
+      - 
+        uses: actions/upload-artifact@v2
+        if: ${{ always() }}
+        with:
+          name: derived_data
+          path: ${{ github.workspace }}/derived_data
+          if-no-files-found: error
+          retention-days: 60
+
