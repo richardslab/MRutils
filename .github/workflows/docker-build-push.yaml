@@ -214,8 +214,8 @@ jobs:
           run: Rscript /work/scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
       -
         name: Show files available
-          if: ${{ always() }}
-          run: ls -ltrR
+        if: ${{ always() }}
+        run: ls -ltrR
       - uses: actions/upload-artifact@v2
         with:
           name: report_pdf
