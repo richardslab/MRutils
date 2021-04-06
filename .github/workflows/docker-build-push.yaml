@@ -196,7 +196,7 @@ jobs:
         uses: actions/checkout@v2
       - 
         name: get Raw Data
-        run: curl -L"${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
+        run: curl -L "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
       -
         name: get Raw Data
         run: curl -L "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
