@@ -196,10 +196,12 @@ jobs:
         uses: actions/checkout@v2
       - 
         name: get Raw Data
-        run: curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
-      -
-        name: get Raw Data
-        run: curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
+        run: |
+          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}"     > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
+          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
+      - 
+        name: put LD Link token into a file
+        run: echo ${{ secrets.LD_LINK_TOKEN }} > ${{ github.workspace }}/LD_LINK_TOKEN
       -
         name: Show files available
         run: ls -ltrR ${{ github.workspace }}
@@ -211,7 +213,7 @@ jobs:
           shell: 
           precommand_prefix: 
           options: -v ${{ github.workspace }}:/work 
-          run: Rscript /work/scripts/knit.R -t ${{ secrets.LD_LINK_TOKEN }} -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
+          run: Rscript /work/scripts/knit.R -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
       -
         name: Show files available
         if: ${{ always() }}
