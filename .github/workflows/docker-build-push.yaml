@@ -196,11 +196,10 @@ jobs:
         uses: actions/checkout@v2
       - 
         name: get Raw Data
-        run: curl -SL "${RESULTS_BASE_URL}/${RESULTS_FILE}" > ${{ github.workspace }}/raw_data/${RESULTS_FILE}
-      - 
+        run: curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
         name: get Raw Data
-        run: curl -SL "${RESULTS_BASE_URL}/${RESULTS_FILE}.tbi" > ${{ github.workspace }}/raw_data/${RESULTS_FILE}.tbi 
-      -
+        run: curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
+       -
         name: Show files available
         run: ls ${{ github.workspace }}/scripts    
       -
@@ -222,6 +221,7 @@ jobs:
           if-no-files-found: error
           retention-days: 60
       - uses: actions/upload-artifact@v2
+        if: ${{ always() }}
         with:
           name: derived_data
           path: ${{ github.workspace }}/derived_data
