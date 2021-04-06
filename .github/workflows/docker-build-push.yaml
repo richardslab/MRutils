@@ -188,7 +188,7 @@ jobs:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
     env: 
-      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020/
+      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
       RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
     steps:
       -
