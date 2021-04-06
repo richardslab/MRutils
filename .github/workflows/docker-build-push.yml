@@ -197,7 +197,7 @@ jobs:
       - 
         name: get Raw Data
         run: curl -SL "${RESULTS_BASE_URL}/${RESULTS_FILE}" > ${{ github.workspace }}/raw_data/${RESULTS_FILE}
-     - 
+      - 
         name: get Raw Data
         run: curl -SL "${RESULTS_BASE_URL}/${RESULTS_FILE}.tbi" > ${{ github.workspace }}/raw_data/${RESULTS_FILE}.tbi 
       -
@@ -219,6 +219,12 @@ jobs:
         with:
           name: report_pdf
           path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
+          if-no-files-found: error
+          retention-days: 60
+      - uses: actions/upload-artifact@v2
+        with:
+          name: derived_data
+          path: ${{ github.workspace }}/derived_data
           if-no-files-found: error
           retention-days: 60
 
