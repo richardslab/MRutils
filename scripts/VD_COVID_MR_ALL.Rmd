@@ -6,12 +6,12 @@ params:
   exposure_name: Vitamin D
   prefix: VD_A2
   pop: !r c("CEU", "TSI", "GBR", "IBS")
-  LDLink_token: "151d285edb97"
-  #LDLink_token: "<NEED INPUT>"
+  LDLink_token: !r trim(readChar("../LDLink.TOKEN",20))
   near_half_threshold: 0.08
   exposure_pvalue_threshold: !r as.numeric("5e-5") #needs !r otherwise it's interpreted as a string....
   MAF_rare_threshold: 0.01
   prune_r2_threshold: 0.05
+  skip_LD_api: !r TRUE
   outcome_file: ../raw_data/COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
   results_dir: ../derived_data
 
@@ -19,8 +19,9 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# knitr::opts_knit$set("root.dir", "~/RichardsLab/VitaminD_COVID_MR_reproduce/scripts")
 knitr::opts_chunk$set(cache = TRUE)
+
+show(params$LDLink_token)
 
 ```
 
@@ -41,8 +42,6 @@ for (i in names(params)) {
   else 
     print(glue("{i} = [redacted]"))
 }
-
-incompatible=c("rs10832311","rs7412")
 
 ```
 
@@ -129,7 +128,6 @@ merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
                           by = c("rsid", "CHR", "POS"), 
                           all.x = T,
                           )
-subset(merged_exp_and_out, rsid %in% incompatible)
 
 print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_out%>%subset(is.na(beta.out)))} variants lacking 'beta.out', and {nrow(merged_exp_and_out)} variants overall."))
 ```
@@ -137,7 +135,7 @@ print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_o
 ```{r get proxies, cache=TRUE}
 
 ##takes time (hits the LDLink API)
-proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(MAF.out))$rsid, params$LDLink_token, population = params$pop, results_dir = params$results_dir, skip_api = TRUE)
+proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(MAF.out))$rsid, params$LDLink_token, population = params$pop, results_dir = params$results_dir, skip_api = params$skip_LD_api)
 
 print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$MAF.out)))} requested"))
 ```
@@ -145,8 +143,6 @@ print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$qu
 ```{r use proxies}
 #subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome
 proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
-
-subset(proxies_in_outcome,rsid %in% incompatible)
 
 proxies <- proxies_raw %>% subset(rsid %in% proxies_in_outcome$rsid)
 
@@ -172,10 +168,8 @@ proxies_with_exposure <- exposure_and_proxies %>%
 
 print(glue("After removing ambiguous snps and choosing the most linked SNP for every query, {nrow(proxies_with_exposure)} proxies remain."))
 
-subset(proxies_with_exposure,rsid %in% incompatible,select=c("Alleles","Correlated_Alleles","rsid","EA","NEA"))
-
-with(proxies_with_exposure, Alleles==glue("({EA}/{NEA})") |Alleles==glue("({NEA}/{EA})"))
-subset(proxies_with_exposure,select=c(Alleles,Correlated_Alleles,rsid,EA,NEA))
+with(proxies_with_exposure, Alleles == glue("({EA}/{NEA})") | Alleles == glue("({NEA}/{EA})"))
+subset(proxies_with_exposure, select = c(Alleles, Correlated_Alleles, rsid, EA, NEA))
 ```
 
 
@@ -192,7 +186,6 @@ fixed_proxies_with_exposure <- adply(proxies_with_exposure, 1, function(x) {
 
 if (!all(with(fixed_proxies_with_exposure, Alleles == glue("({EA}/{NEA})") | Alleles == glue("({NEA}/{EA})")))) {
   warn("there was a problem fixing the alleles")
-  subset(fixed_proxies_with_exposure, rsid %in% incompatible, select = c("Alleles", "Correlated_Alleles", "rsid", "EA", "NEA"))
 }
 
 
@@ -210,8 +203,6 @@ merged_with_proxies <- merge(proxies_in_outcome,
 
 merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(MAF.out))
 print(glue("Total number of SNPs for use in 2-Sample MR (prior to pruning): {nrow(merged_and_combined)}."))
-
-
 
 ```
 
