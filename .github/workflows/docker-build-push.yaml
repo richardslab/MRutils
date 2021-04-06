@@ -197,9 +197,10 @@ jobs:
       - 
         name: get Raw Data
         run: curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
+      -
         name: get Raw Data
         run: curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
-       -
+      -
         name: Show files available
         run: ls ${{ github.workspace }}/scripts    
       -
