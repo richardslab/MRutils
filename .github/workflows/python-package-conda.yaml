@@ -32,7 +32,7 @@ jobs:
             hashFiles('installation/environment.yaml') }}
       - 
         uses: conda-incubator/setup-miniconda@v2
-        id:conda-build
+        id: conda-build
         with:
           python-version: 3.6
           activate-environment: VitaminD_MR
