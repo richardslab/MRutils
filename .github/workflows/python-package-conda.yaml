@@ -63,7 +63,7 @@ jobs:
         name: test-subset
         run: >
           conda run -n VitaminD_MR Rscript -e 
-          'library(dplyr); wanted=c("erupted"); faithful%>%subset(wanted);'
+          'library(dplyr); wanted=c("erupted"); faithful%>%subset(select=wanted);'
   run-VDMR-conda:
     name: Build Environment and also do the VDMR analysis
     runs-on: "ubuntu-latest"
