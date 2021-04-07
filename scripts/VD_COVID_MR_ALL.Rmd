@@ -87,7 +87,7 @@ map_outcome_data <- function(x) {
          MAF = all_meta_AF, 
          EAF = all_meta_AF, 
          SE = all_inv_var_meta_sebeta) %>% 
-      subset(select=required_headers)
+      subset(select = required_headers)
 }
  
   outcome_data <- extract_snps_from_bgzip(outcome = params$outcome_file, snps = significant_snps) %>% map_outcome_data()
