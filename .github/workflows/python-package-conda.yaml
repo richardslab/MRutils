@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - ['**']
 jobs:
   testStepsAndLint:
     name: Build Environment using Mamba
