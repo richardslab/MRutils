@@ -58,9 +58,7 @@ jobs:
         name: test-r-libraries
         run: |
           conda run -n VitaminD_MR Rscript -e 'library(TwoSampleMR); library(LDlinkR);'
-
-
-run-VDMR-conda:
+  run-VDMR-conda:
     name: Build Environment and also do the VDMR analysis
     runs-on: "ubuntu-latest"
     env: 
