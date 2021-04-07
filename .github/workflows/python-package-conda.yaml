@@ -92,6 +92,10 @@ jobs:
           channel-priority: strict
           environment-file: installation/environment.yaml
           use-only-tar-bz2: true
+      -  
+        name: post-conda-steps
+        run: |
+          installation/post_conda_steps.sh 
       - 
         name: get raw data For test
         run: |
