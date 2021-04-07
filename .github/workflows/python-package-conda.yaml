@@ -3,7 +3,7 @@ name: R and Python Package using Conda and mamba
 on: 
   pull_request:
   push:
-    branches:
+    branch:
       - ['**']
 jobs:
   testStepsAndLint:
