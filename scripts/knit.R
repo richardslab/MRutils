@@ -7,10 +7,6 @@ parser <- ArgumentParser()
 # specify our desired options
 # by default ArgumentParser will add an help option
 
-parser$add_argument("-t", "--token",
-                    type = "character",
-                    help = "LD-Link API access token. If you don't have one go here: https://ldlink.nci.nih.gov/?tab=apiaccess",
-                    metavar = "token")
 parser$add_argument("-i", "--input-file",
                     type = "character",
                     help = "Report Rmd file to knit",
@@ -29,7 +25,6 @@ args <- parser$parse_args()
 rmarkdown::render(
   input = args$input_file,
   output_format = "pdf_document",
-  params = list(LDLink_token = args$token,
-                skip_LD_api = FALSE),
+  params = list(skip_LD_api = FALSE),
   output_file = args$output_file
   )
