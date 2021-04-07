@@ -20,6 +20,7 @@ jobs:
         uses: actions/checkout@v2
       - 
         name: Cache conda
+        post-if: ${{ always() }}
         uses: actions/cache@v2
         env:
           # Increase this value to reset cache if installation/environment.yaml has not changed
@@ -31,6 +32,7 @@ jobs:
             hashFiles('installation/environment.yaml') }}
       - 
         uses: conda-incubator/setup-miniconda@v2
+        id:conda-build
         with:
           python-version: 3.6
           activate-environment: VitaminD_MR
