@@ -17,16 +17,15 @@ params:
   results_dir: ../derived_data
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(cache = TRUE)
 knitr::opts_chunk$set(error = TRUE)
 knitr::opts_chunk$set(comment = "")
 
-params$LDLink_token
 ```
 
-```{r libraries and setup, echo=FALSE}
+```{r libraries and setup}
 require(tidyr)
 require(plyr)
 require(dplyr)
@@ -51,7 +50,7 @@ for (i in names(params)) {
 Since the input data is given to us as an excel spreadsheet, we have to extract the information from it
 "manually". In order to avoid copy-paste errors, we extract the information using the readxl library. 
 
-```{r extract excelsheet data, echo=FALSE,verbose=TRUE}
+```{r extract excelsheet data, verbose=TRUE}
 data = read_excel(params$exposure_gwas_file, 
                   sheet = "Table S2", 
                   skip = 4, 
@@ -88,7 +87,7 @@ Read `r nrow(data)` entries from `r params$exposure_gwas_file`
 ### Outcome  
 
 ## extract relevant SNPs
-```{r extract Snps, echo=FALSE}
+```{r extract Snps}
 
 map_outcome_data <- function(x) {
   
@@ -109,7 +108,7 @@ map_outcome_data <- function(x) {
 ```
 
 ## find names for un-named snps
-```{r find_unnamed_snps, echo=FALSE, cache=TRUE, extra.cache=tools::md5sum(dir("../derived_data/","rs[0-9]*.txt", full.names = TRUE))}
+```{r find_unnamed_snps, cache=TRUE, extra.cache=tools::md5sum(dir("../derived_data/","rs[0-9]*.txt", full.names = TRUE))}
 ## this can take time and hits the API multiple times....
 print(glue("There are {nrow(outcome_data%>%subset(is.na(rsid)))} SNPs in the outcome data that are missing their rsid: "))
 print(outcome_data%>%subset(is.na(rsid),select=c(CHR,POS,EA,NEA)))
@@ -121,19 +120,19 @@ print(glue("{withIds$rsid}"))
 write.table(withIds, glue("{params$results_dir}/{params$prefix}_rsIdsFromdbSnp.txt"), quote = F, sep = '\t', row.names = F)
 ```
 
-```{r post-cache read variable, echo=FALSE}
+```{r post-cache read variable}
 withIds <- read.table(glue("{params$results_dir}/{params$prefix}_rsIdsFromdbSnp.txt"), sep = '\t', header = T)
 
 ```
 
 ## merge into other data
-```{r merge found snps into data, echo=FALSE}
+```{r merge found snps into data}
 outcome_with_rsids <- merge_rsids_into_gwas(outcome_data, withIds)
   
 print(glue("After merging the results, there are {nrow(outcome_with_rsids%>%subset(is.na(rsid)))} variants lacking rsid, and {nrow(outcome_with_rsids)} variants overall."))
 ```
 
-```{r merge exposure and outcome, echo=FALSE}
+```{r merge exposure and outcome}
 merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
                           outcome_with_rsids, 
                           by = c("rsid", "CHR", "POS"), 
@@ -143,7 +142,7 @@ merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
 print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_out%>%subset(is.na(beta.out)))} variants lacking 'beta.out', and {nrow(merged_exp_and_out)} variants overall."))
 ```
 
-```{r get proxies, cache=TRUE, echo=FALSE}
+```{r get proxies, cache=TRUE}
 
 ##takes time (hits the LDLink API)
 proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(beta.out))$rsid, 
@@ -156,22 +155,23 @@ print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$qu
 ```
 
 Subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome.
-```{r use proxies, echo=FALSE}
+```{r use proxies}
 proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
 
 proxies <- proxies_raw %>% subset(rsid %in% proxies_in_outcome$rsid)
 
 ```
-`r nrow(proxies)` proxies (of `r nrow(proxies_raw)`) were found in the outcome.
+There are `r nrow(proxies)` proxies 
+(of `r nrow(proxies_raw)`) in the outcome.
 
 Merge proxies with exposure...
-```{r merge proxies and exposure, echo=FALSE}
+```{r merge proxies and exposure}
 exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
 ```
 ... `r nrow(exposure_and_proxies)` proxies were successfully merged with the exposure.
 
 Remove chimeric snps and then the smallest P
-```{r, remove chimeric SNPs, echo=FALSE}
+```{r, remove chimeric SNPs}
 proxies_with_exposure <- exposure_and_proxies %>% 
   mutate(maf_near_half = abs(MAF.exp - 0.5) <= params$near_half_threshold, 
          distance_to_query = abs(POS.exp - POS.proxy)) %>%
@@ -185,13 +185,13 @@ proxies_with_exposure <- exposure_and_proxies %>%
 ```
 After removing ambiguous snps and choosing the most linked SNP for every query, `r nrow(proxies_with_exposure)` proxies remain.
 
-```{r Check alleles, eval=FALSE, echo=FALSE}
+```{r Check alleles, eval=FALSE}
 with(proxies_with_exposure, Alleles == glue("({EA}/{NEA})") | Alleles == glue("({NEA}/{EA})"))
 subset(proxies_with_exposure, select = c(Alleles, Correlated_Alleles, rsid, EA, NEA))
 ```
 
 
-```{r fix-proxy-alleles, echo=FALSE}
+```{r fix-proxy-alleles}
 
 fixed_proxies_with_exposure <- adply(proxies_with_exposure, 1, function(x) {
   replace_alleles(list(x$EA, x$NEA), x$Correlated_Alleles) %>%
