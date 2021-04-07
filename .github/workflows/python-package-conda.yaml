@@ -9,9 +9,6 @@ jobs:
   testStepsAndLint:
     name: Build Environment using Mamba
     runs-on: "ubuntu-latest"
-    env: 
-      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
-      RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
     defaults:
       run:
         shell: bash -l {0}
@@ -61,6 +58,42 @@ jobs:
         name: test-r-libraries
         run: |
           conda run -n VitaminD_MR Rscript -e 'library(TwoSampleMR); library(LDlinkR);'
+
+
+run-VDMR-conda:
+    name: Build Environment and also do the VDMR analysis
+    runs-on: "ubuntu-latest"
+    env: 
+      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
+      RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - 
+        uses: actions/checkout@v2
+      - 
+        name: Cache conda
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if installation/environment.yaml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('installation/environment.yaml') }}
+      - 
+        uses: conda-incubator/setup-miniconda@v2
+        id: conda-build
+        with:
+          python-version: 3.6
+          activate-environment: VitaminD_MR
+          mamba-version: "*"
+          channels: conda-forge,r,bioconda,defaults,anaconda
+          channel-priority: strict
+          environment-file: installation/environment.yaml
+          use-only-tar-bz2: true
       - 
         name: get raw data For test
         run: |
