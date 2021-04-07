@@ -18,8 +18,11 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(error = TRUE)
+knitr::opts_chunk$set(comment = "")
+
 params$LDLink_token
 ```
 
@@ -48,22 +51,32 @@ for (i in names(params)) {
 Since the input data is given to us as an excel spreadsheet, we have to extract the information from it
 "manually". In order to avoid copy-paste errors, we extract the information using the readxl library. 
 
-```{r extract excelsheet data, echo=FALSE}
+```{r extract excelsheet data, echo=FALSE,verbose=TRUE}
 data = read_excel(params$exposure_gwas_file, 
                   sheet = "Table S2", 
                   skip = 4, 
                   .name_repair = "minimal") %>% subset(select = c(1:5, 13:17))
+```
 
+```{r debug1,verbose=TRUE}
 first_blank = min(which(is.na(data$RSID)))
 # use the first blank line as an indication of the end of the data, since the dictionary comes after
 if (length(first_blank) == 1) {
   data = data[1:min(first_blank - 1, nrow(data)),]
 }
+```
+
+```{r debug2,verbose=TRUE}
 names(data)[8] = "beta"
 names(data)[1] = "rsid"
 data = data %>% mutate_at(.vars = c("EAF", "MAF", "beta", "SE", "P"), as.numeric)
-data = data %>% mutate(POS = BP, CHR = gsub("^chr", "", CHR))
+```
 
+```{r debug3,verbose=TRUE}
+data = data %>% mutate(POS = BP, CHR = gsub("^chr", "", CHR))
+```
+
+```{r debug4,verbose=TRUE}
 significant_snps <- filter_and_write_exposure_data(data, 
                                                    location_prefix = glue("{params$results_dir}/{params$prefix}_"), 
                                                    params$exposure_pvalue_threshold, 
