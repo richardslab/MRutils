@@ -10,9 +10,9 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get -qq update && apt-get -qq install -y curl libcairo2-dev ghostscript texlive-latex-extra texlive-extra-utils vim less 
 
 # Install miniconda to /miniconda
-RUN curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b
-RUN rm Miniconda3-latest-Linux-x86_64.sh
+COPY install_conda.sh /app/
+RUN ./install_conda.sh
+
 ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
 
