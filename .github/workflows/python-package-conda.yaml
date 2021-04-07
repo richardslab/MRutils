@@ -56,8 +56,14 @@ jobs:
           R -e 'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: test-r-libraries
-        run: |
-          conda run -n VitaminD_MR Rscript -e 'library(TwoSampleMR); library(LDlinkR);'
+        run: >
+          conda run -n VitaminD_MR Rscript -e 
+          'library(TwoSampleMR); library(LDlinkR);'
+      - 
+        name: test-subset
+        run: >
+          conda run -n VitaminD_MR Rscript -e 
+          'wanted=c("carat","cut","color"); diamonds%>%subset(wanted);'
   run-VDMR-conda:
     name: Build Environment and also do the VDMR analysis
     runs-on: "ubuntu-latest"
