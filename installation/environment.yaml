@@ -11,7 +11,7 @@ dependencies:
   - python=3.6
   - tabix
   #- gfortran_linux-64=7.3
-  - libgfortran=4.0.0
+  - libgfortran
   - r::r-stringi
   - r-argparse
   - r-tidyverse>=1.2
