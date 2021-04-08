@@ -10,8 +10,7 @@ channels:
 dependencies:
   - python=3.6
   - tabix
-  #- gfortran_linux-64=7.3
-  - libgfortran
+  - gfortran_linux-64=7.3
   - conda-forge::r-stringi
   - r-argparse
   - r-tidyverse>=1.2
@@ -33,5 +32,6 @@ dependencies:
   - r-car
   - r-mgsub
   - r-validate
-  - r-rgargle=1.1.0
+  - r-gargle=1.1.0
+  - r-googleauthr=1.4.0
 
