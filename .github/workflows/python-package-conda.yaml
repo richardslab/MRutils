@@ -38,10 +38,6 @@ jobs:
           environment-file: installation/environment.yaml
           use-only-tar-bz2: true
       - 
-        name: post-conda-steps
-        run: |
-          installation/post_conda_steps.sh 
-      - 
         name: export env
         run: conda env export > VitaminD_MR_frozen.yaml 
       - 
@@ -52,6 +48,10 @@ jobs:
           path: VitaminD_MR_frozen.yaml
           if-no-files-found: error
           retention-days: 60
+      - 
+        name: post-conda-steps
+        run: |
+          installation/post_conda_steps.sh 
       -
         name: Conda info
         run: |
