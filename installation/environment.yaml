@@ -10,7 +10,8 @@ channels:
 dependencies:
   - python=3.6
   - tabix
-  - gfortran_linux-64=7.3
+  #- gfortran_linux-64=7.3
+  - libgfortran=4.0.0
   - r::r-stringi
   - r-argparse
   - r-tidyverse>=1.2
@@ -21,7 +22,7 @@ dependencies:
   - r-ggplot2  # needs channel conda-forge
   - r-ldlinkr>=1.0.0 # needs channel bioconda
   - r-curl>=3.3 
-  - r-devtools
+  - r-devtools==2.4.0 
   - r-plotly
   - r-openxlsx
   - r-gmp
@@ -31,4 +32,5 @@ dependencies:
   - r-pbkrtest
   - r-car
   - r-mgsub
+  - r-validate
 
