@@ -112,16 +112,21 @@ jobs:
       - name: Show space available
         run: df -h .
       -
-        name: test running in docker
+        name: test exporting conda env in docker
         uses: yfarjoun/docker-run-action@yf_debug_info
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           shell:
+          options: -v ${{ github.workspace }}:/work
           precommand_prefix:  
           run: |
             conda info
-            conda env export > VitaminD_MR_frozen.yaml 
-      - 
+            conda env export > /work/VitaminD_MR_frozen.yaml 
+            ls /work
+      -
+        name: Show files available
+        run: ls -ltrR
+      -
         name: create upload-artifact
         uses: actions/upload-artifact@v2
         with:
