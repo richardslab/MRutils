@@ -12,7 +12,7 @@ set +e \
   && PS1='$$$ ' \
   && . "$(conda info --base)"/etc/profile.d/conda.sh \
   && conda activate base 
-set -e
+#set -e
 
 conda activate VitaminD_MR
 
