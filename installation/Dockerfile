@@ -12,8 +12,8 @@ RUN apt-get -qq update && apt-get -qq install -y curl libcairo2-dev ghostscript 
 # Install miniconda to /miniconda
 WORKDIR /app
 
-COPY install_conda.sh /app/
-RUN ./install_conda.sh
+COPY 01-install_conda.sh /app/
+RUN ./01-install_conda.sh
 
 ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
@@ -22,21 +22,20 @@ RUN conda update -y conda
 # Make RUN commands use `bash --login`:
 #SHELL ["/bin/bash", "--login"]
 
-COPY create_env.sh environment.yaml /app/
-RUN ./create_env.sh
+COPY 02-create_env.sh environment.yaml /app/
+RUN ./02-create_env.sh
 
 RUN conda init bash
 RUN echo "conda activate VitaminD_MR" >> ~/.bashrc
 
-COPY post_conda_steps.* /app/
+COPY *post_conda_steps.* /app/
 RUN conda init
-RUN ./post_conda_steps.sh
+RUN ./03-post_conda_steps.sh
 
-RUN conda env export -n VitaminD_MR > /app/linux_env.yml
-
+RUN conda env export -n VitaminD_MR > /app/linux_docker_env.yml
 
 COPY Dockerfile /app/
 
-ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output", "bash", "-c"]
+ENTRYPOINT ["conda", "run", "-n", "VitaminD_MR", "--no-capture-output"]
 
 CMD ["bash"]
