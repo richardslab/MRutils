@@ -5,5 +5,5 @@ install.packages("devtools",repos="https://cloud.r-project.org") # for some reas
 devtools::install_github("MRCIEU/TwoSampleMR", 
                          ref = "0.5.4", 
                          quiet = TRUE, 
-                         upgrade = "always")
+                         upgrade = "never")
 
