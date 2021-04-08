@@ -10,8 +10,6 @@ set +eu \
   && conda activate base \
   && conda install -y -c conda-forge mamba 
 
-set -e;
-
 conda deactivate || echo "No active environment"
 conda env remove -n ${ENV} || echo "Couldn't remove environment ${ENV}"
 conda create -y -n ${ENV}  || echo "It seem that environment ${ENV} is already present"
