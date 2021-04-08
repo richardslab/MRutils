@@ -10,13 +10,14 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get -qq update && apt-get -qq install -y curl libcairo2-dev ghostscript texlive-latex-extra texlive-extra-utils vim less 
 
 # Install miniconda to /miniconda
+WORKDIR /app
+
 COPY install_conda.sh /app/
 RUN ./install_conda.sh
 
 ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
 
-WORKDIR /app
 
 # Make RUN commands use `bash --login`:
 #SHELL ["/bin/bash", "--login"]
