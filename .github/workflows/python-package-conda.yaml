@@ -41,7 +41,18 @@ jobs:
         name: post-conda-steps
         run: |
           installation/post_conda_steps.sh 
-      -   
+      - 
+        name: export env
+        run: conda env export > VitaminD_MR_frozen.yaml 
+      - 
+        name: create upload-artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: conda-environment
+          path: VitaminD_MR_frozen.yaml
+          if-no-files-found: error
+          retention-days: 60
+      -
         name: Conda info
         run: |
           conda info --envs
@@ -64,6 +75,7 @@ jobs:
         run: >
           conda run -n VitaminD_MR Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
+
   run-VDMR-conda:
     name: Build Environment and also do the VDMR analysis
     runs-on: "ubuntu-latest"
@@ -102,6 +114,17 @@ jobs:
         name: post-conda-steps
         run: |
           installation/post_conda_steps.sh 
+      - 
+        name: export env
+        run: conda env export > VitaminD_MR_frozen.yaml 
+      - 
+        name: create upload-artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: conda-environment
+          path: VitaminD_MR_frozen.yaml
+          if-no-files-found: error
+          retention-days: 60
       - 
         name: get raw data For test
         run: |
