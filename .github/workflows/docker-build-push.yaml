@@ -6,7 +6,7 @@ on:
       - main
   push:
     branches:
-      - main
+      - '**'
 env:
     dockerhub_repository: vitamin_d_mr_test
     dockerhub_organization: richardslab
@@ -128,8 +128,7 @@ jobs:
           name: conda-environment
           path: VitaminD_MR_frozen.yaml
           if-no-files-found: error
-          retention-days: 60
-          
+          retention-days: 60 
   test_r_png:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest

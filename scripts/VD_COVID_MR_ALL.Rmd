@@ -6,10 +6,10 @@ params:
   exposure_name: Vitamin D
   prefix: VD_A2
   pop: !r c("CEU", "TSI", "GBR", "IBS")
-  LDLink_token: !r tryCatch(glue::trim(readChar("../LD_LINK_TOKEN",20)), warning=function(cond) { message("The file LD_LINK_TOKEN should contain an access token to the NCI API. if you don't have a token go here:\n https://ldlink.nci.nih.gov/?tab=apiaccess"); return(""); })
+  LDLink_token: !r tryCatch(glue::trim(readChar("../LD_LINK_TOKEN", 20)), warning=function(cond) { message("The file LD_LINK_TOKEN should contain an access token to the NCI API. if you don't have a token go here:\n https://ldlink.nci.nih.gov/?tab=apiaccess"); return(""); })
   near_half_threshold: 0.08
   exposure_gwas_file: ../raw_data/1-s2.0-S0002929720300173-mmc2.xlsx
-  exposure_pvalue_threshold: !r as.numeric("5e-5") #needs !r otherwise it's interpreted as a string....
+  exposure_pvalue_threshold: !r as.numeric("5e-5") 
   MAF_rare_threshold: 0.01
   prune_r2_threshold: 0.05
   skip_LD_api: !r TRUE
@@ -27,12 +27,13 @@ knitr::opts_chunk$set(comment = "")
 
 ```{r libraries and setup}
 require(tidyr)
-require(plyr)
 require(dplyr)
+require(plyr)
 require(readxl)
 require(glue)
 require(magrittr)
 require(ggplot2)
+require(validate)
 
 source("utils.R")
 
@@ -54,7 +55,8 @@ Since the input data is given to us as an excel spreadsheet, we have to extract 
 data = read_excel(params$exposure_gwas_file, 
                   sheet = "Table S2", 
                   skip = 4, 
-                  .name_repair = "minimal") %>% subset(select = c(1:5, 13:17))
+                  .name_repair = "minimal") %>% 
+  subset(select = c(1:5, 13:17))
 ```
 
 ```{r debug1,verbose=TRUE}
@@ -68,28 +70,15 @@ if (length(first_blank) == 1) {
 ```{r debug2,verbose=TRUE}
 names(data)[8] = "beta"
 names(data)[1] = "rsid"
-data = data %>% mutate_at(.vars = c("EAF", "MAF", "beta", "SE", "P"), as.numeric)
-```
-```{ r}
-# make sure that probabilities are between 0 and 1
-
-# make sure that numeric field are truly numeric
-
-# make sure that POS is positive
-
-# make sure that CHR is truly in the reference
-
-# make sure that the alleles are indeed from [ACGT]
-
-# is the P really genome-wide significant
-
-# confirm that rsids are indeed of the format "rs[0-9]*"
+data %<>% 
+  mutate_at(.vars = c("EAF", "beta", "SE", "P"), as.numeric) %>% 
+  mutate(POS = BP, CHR = gsub("^chr", "", CHR), BP = NULL)
 ```
 
 
-
-```{r debug3, verbose=TRUE}
-data = data %>% mutate(POS = BP, CHR = gsub("^chr", "", CHR), BP = NULL)
+Make sure that the exposure data validates as a gwas
+```{r Validate exposure data}
+summary(confront(data, gwas_rules))
 ```
 
 ```{r debug4,verbose=TRUE}
@@ -97,7 +86,6 @@ significant_snps <- filter_and_write_exposure_data(data,
                                                    location_prefix = glue("{params$results_dir}/{params$prefix}_"), 
                                                    params$exposure_pvalue_threshold, 
                                                    params$MAF_rare_threshold)
-
 ```
 Read `r nrow(data)` entries from `r params$exposure_gwas_file`
 
@@ -113,7 +101,6 @@ map_outcome_data <- function(x) {
          P = all_inv_var_meta_p, 
          EA = ALT, 
          NEA = REF, 
-         MAF = all_meta_AF, 
          EAF = all_meta_AF, 
          SE = all_inv_var_meta_sebeta) %>% 
       subset(select = required_headers)
@@ -122,6 +109,12 @@ map_outcome_data <- function(x) {
   outcome_data <- extract_snps_from_bgzip(outcome = params$outcome_file, snps = significant_snps) %>% map_outcome_data()
   
   print(glue("There are {nrow(outcome_data)} SNPs in the outcome file {params$outcome_file}"))
+```
+
+
+Make sure that the outcome data validates as a gwas
+```{r Validate outcome data}
+summary(confront(outcome_data, gwas_rules))
 ```
 
 ## find names for un-named snps
@@ -168,11 +161,11 @@ proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(beta.out))$rsid,
                            results_dir = params$results_dir, 
                            skip_api = params$skip_LD_api)
 
-print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$MAF.out)))} requested"))
+print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$EAF.out)))} requested"))
 ```
 
 Subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome.
-```{r use proxies,results=FALSE}
+```{r use proxies}
 proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
 
 ```
@@ -206,7 +199,7 @@ exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","
 Remove chimeric snps and then the smallest P
 ```{r, remove chimeric SNPs}
 proxies_with_exposure <- exposure_and_proxies %>% 
-  mutate(maf_near_half = abs(MAF.exp - 0.5) <= params$near_half_threshold, 
+  mutate(maf_near_half = abs(EAF.exp - 0.5) <= params$near_half_threshold, 
          distance_to_query = abs(POS.exp - POS.proxy)) %>%
   subset( !(Alleles %in% chimeric & maf_near_half)) %>%
   group_by(query_rsid) %>%
@@ -248,10 +241,9 @@ merged_with_proxies <- merge(proxies_in_outcome_with_rsids,
                              suffixes = c(".out",".exp"),
                              by.x = c("rsid", "CHR"),
                              by.y = c("rsid", "CHR")) %>%
-  mutate(MAF.out = MAF, MAF = NULL) %>%
-  select(c(-POS.proxy, -POS.exp, -R2, -Correlated_Alleles, -Alleles, -Locus, -MAF.proxy))
+  select(c(-POS.proxy, -POS.exp, -R2, -Correlated_Alleles, -Alleles, -Locus,))
 
-merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(MAF.out))
+merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(EAF.out))
 ```
 
 Total number of SNPs for use in 2-Sample MR (prior to pruning): `r nrow(merged_and_combined)`
@@ -272,7 +264,7 @@ ld_pairs <- ld_pairs_raw %>% mutate(
 p = ggplot(ld_pairs) +  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable))
     
 show(p + aes(fill = value) + labs(fill = expression(R^2), parse = TRUE))
-show(p + aes(fill = value > params$prune_r2_threshold) + labs(fill = expression(R^2>threshold), parse = TRUE))
+show(p + aes(fill = value > params$prune_r2_threshold) + labs(fill = expression(R^2 > threshold), parse = TRUE))
 
 
 ```

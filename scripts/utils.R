@@ -8,9 +8,25 @@ require(reshape2)
 require(TwoSampleMR)
 require(mgsub)
 require(purrr)
+require(validate)
 
 required_headers <- 
-  c("rsid", "CHR", "POS", "MAF", "P", "beta", "EA", "NEA", "EAF", "SE")
+  c("rsid", "CHR", "POS", "P", "beta", "EA", "NEA", "EAF", "SE")
+
+
+valid_contigs = c(1:22,"X","Y")
+
+gwas_rules <- validator(field_format(rsid, "rs*"),
+                        CHR %in% contigs,
+                        POS > 0,
+                        field_format(EA, "[ACGT]", type = "regex"),
+                        field_format(NEA, "[ACGT]", type = "regex"),
+                        in_range(EAF , 0, 1),
+                        is.numeric(beta),
+                        is.numeric(SE),
+                        in_range(SE, min = 0, Inf),
+                        in_range(P, 0, 1)
+)
 
 
 # it is expected that snps has two columns 'CHR' and 'POS' 
@@ -60,7 +76,7 @@ filter_and_write_exposure_data <- function(data,
               row.names = FALSE, 
               quote = FALSE)
   
-  significant_snps = data %>% subset(P < pvalue_threshold & MAF >= rare_threshold) 
+  significant_snps = data %>% subset(P < pvalue_threshold & EAF >= rare_threshold & NEA >= rare_threshold) 
   write.table(significant_snps, 
               glue("{location_prefix}exp_significant_SNPs.tsv"), 
               sep = "\t", 
