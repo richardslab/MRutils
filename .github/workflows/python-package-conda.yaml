@@ -39,19 +39,19 @@ jobs:
           use-only-tar-bz2: true
       - 
         name: export env
-        run: conda env export > VitaminD_MR_frozen.yaml 
+        run: conda env export > VitaminD_MR_linux.yaml 
       - 
         name: create upload-artifact
         uses: actions/upload-artifact@v2
         with:
-          name: conda-environment
-          path: VitaminD_MR_frozen.yaml
+          name: conda-environment-linux
+          path: VitaminD_MR_linux.yaml
           if-no-files-found: error
           retention-days: 60
       - 
         name: post-conda-steps
         run: |
-          installation/post_conda_steps.sh 
+          installation/03-post_conda_steps.sh 
       -
         name: Conda info
         run: |

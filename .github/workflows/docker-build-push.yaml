@@ -101,6 +101,8 @@ jobs:
         with:
           context: installation
           push: true
+          build-args: |
+            PAT_GITHUB=${{ secrets.PAT_GITHUB }} 
           tags: ${{ needs.variables.outputs.tag }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,mode=max,src=/tmp/.buildx-cache
@@ -134,7 +136,7 @@ jobs:
           path: VitaminD_MR_frozen.yaml
           if-no-files-found: error
           retention-days: 60 
-  test_r_png:
+  small_docker_tests:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
     steps:
@@ -149,13 +151,6 @@ jobs:
           run: Rscript -e 'png()'
           shell:
           precommand_prefix:  
-  test_r_ggplot:
-    needs: [variables,build_docker]
-    runs-on: ubuntu-latest
-    steps:
-      -
-        name: Show space available
-        run: df -h .
       - 
         name: create input files
         run: echo "$file" > file.R
@@ -177,20 +172,14 @@ jobs:
           run: Rscript /work/file.R
           shell:
           precommand_prefix: 
-            
-      - uses: actions/upload-artifact@v2
+      - 
+        uses: actions/upload-artifact@v2
         with:
           name: diamonds_png
           path: diamonds.png
           if-no-files-found: error
           retention-days: 30
-  test_r_2SMR:
-    needs: [variables,build_docker]
-    runs-on: ubuntu-latest
-    steps:
-      -
-        name: Show space available
-        run: df -h .          
+  
       -
         name: run docker test two-sample-mr
         uses: yfarjoun/docker-run-action@main
