@@ -30,7 +30,11 @@ RUN echo "conda activate VitaminD_MR" >> ~/.bashrc
 
 COPY *post_conda_steps.* /app/
 RUN conda init
+
+ARG GITHUB_PAT=""
+RUN echo "${GITHUB_PAT}" > GITHUB_PAT
 RUN ./03-post_conda_steps.sh
+RUN rm PAT_GITHUB
 
 RUN conda env export -n VitaminD_MR > /app/linux_docker_env.yml
 

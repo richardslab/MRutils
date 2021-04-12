@@ -5,11 +5,11 @@ BASEDIR="$(dirname "$0")"
 
 echo RUNNING post-conda steps
 
+# shellcheck source=/dev/null
 set +e \
   && PS1='$$$ ' \
   && . "$(conda info --base)"/etc/profile.d/conda.sh \
   && conda activate base 
-#set -e
 
 conda activate VitaminD_MR
 
