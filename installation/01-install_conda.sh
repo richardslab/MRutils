@@ -7,7 +7,7 @@ case "${unameOut}" in
     *)          machine="UNKNOWN"
 esac
 
-if [ "$machine" = "Mac"]; then
+if [ "$machine" = "Mac" ]; then
 	curl -LO https://repo.anaconda.com/miniconda/Miniconda2-latest-MacOSX-x86_64.sh
 	bash  ~/Miniconda2-latest-MacOSX-x86_64.sh -b -f -p $HOME/miniconda
 	rm Miniconda2-latest-MacOSX-x86_64.sh
@@ -15,7 +15,7 @@ if [ "$machine" = "Mac"]; then
 	conda init
 fi
 
-if [ "$machine" = "Linux"]; then
+if [ "$machine" = "Linux" ]; then
 	curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 	bash Miniconda3-latest-Linux-x86_64.sh -p /miniconda -b
 	rm Miniconda3-latest-Linux-x86_64.sh

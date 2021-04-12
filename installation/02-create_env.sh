@@ -30,7 +30,6 @@ else
 	cp "$BASEDIR"/environment.yaml "$BASEDIR"/environment_modified.yaml 
 fi
 set +e
-
 #set +eu
 mamba env update -q \
 	--file "$BASEDIR"/environment_modified.yaml 
