@@ -10,7 +10,7 @@ channels:
 dependencies:
   - python=3.6
   - tabix
-#  - gfortran_linux-64=7.3 
+  - gfortran_linux-64=7.3 #{{linux-only}}
   - r::r-stringi # can't find libicui18n otherwise...
   - r-argparse
   - r-tidyverse>=1.2
@@ -21,7 +21,7 @@ dependencies:
   - r-ggplot2  # needs channel conda-forge
   - r-ldlinkr>=1.0.0 # needs channel bioconda
   - r-curl>=3.3 
-  - r-devtools==2.4.0 
+  - r-devtools==2.4.0
   - r-plotly
   - r-openxlsx
   - r-gmp
