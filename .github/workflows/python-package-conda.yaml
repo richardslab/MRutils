@@ -113,7 +113,7 @@ jobs:
       -  
         name: post-conda-steps
         run: |
-          installation/post_conda_steps.sh 
+          installation/03-post_conda_steps.sh 
       - 
         name: export env
         run: conda env export > VitaminD_MR_frozen.yaml 
