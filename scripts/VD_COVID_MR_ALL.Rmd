@@ -20,6 +20,7 @@ params:
 ```{r setup}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(error = TRUE)
 knitr::opts_chunk$set(comment = "")
 
@@ -168,7 +169,7 @@ Subset to proxies that are in the outcome first, since we need to find out which
 ```{r use proxies}
 proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
 
-print(glue("need to look for rsid for {nrow(subset(proxies_in_outcome, is.na(rsid)))} snps"))
+print(glue("need to look for rsid for {nrow(subset(proxies_in_outcome, is.na(rsid)))} "))
 ```
 
 
@@ -176,7 +177,7 @@ print(glue("need to look for rsid for {nrow(subset(proxies_in_outcome, is.na(rsi
 proxies_in_outcome_with_missing_ids <- get_unknown_rsids_from_locus(proxies_in_outcome)
 
 write.table(proxies_in_outcome_with_missing_ids, glue("{params$results_dir}/{params$prefix}_proxy_rsIdsFromdbSnp.txt"), quote = F, sep = '\t', row.names = F)
-
+  
 ```
 found rsids for `r nrow(proxies_in_outcome_with_missing_ids)` SNPs
 ```{r merge with rest of outcome}
