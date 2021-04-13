@@ -143,7 +143,7 @@ jobs:
         run: df -h .
       -
         name: run docker test png
-        uses: yfarjoun/docker-run-action@yf_debug_info
+        uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'png()'
@@ -161,7 +161,7 @@ jobs:
         run: cat file.R
       -
         name: run docker test png
-        uses: yfarjoun/docker-run-action@yf_debug_info
+        uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           options: -v ${{ github.workspace }}:/work
