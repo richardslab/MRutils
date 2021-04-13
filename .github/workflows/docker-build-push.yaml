@@ -115,12 +115,10 @@ jobs:
         run: df -h .
       -
         name: test exporting conda env in docker
-        uses: yfarjoun/docker-run-action@yf_debug_info
+        uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          shell:
           options: -v ${{ github.workspace }}:/work
-          precommand_prefix:  
           run: |
             conda info
             conda env export > /work/VitaminD_MR_frozen.yaml 
@@ -145,12 +143,10 @@ jobs:
         run: df -h .
       -
         name: run docker test png
-        uses: yfarjoun/docker-run-action@main
+        uses: yfarjoun/docker-run-action@yf_debug_info
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'png()'
-          shell:
-          precommand_prefix:  
       - 
         name: create input files
         run: echo "$file" > file.R
@@ -165,13 +161,11 @@ jobs:
         run: cat file.R
       -
         name: run docker test png
-        uses: yfarjoun/docker-run-action@main
+        uses: yfarjoun/docker-run-action@yf_debug_info
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           options: -v ${{ github.workspace }}:/work
           run: Rscript /work/file.R
-          shell:
-          precommand_prefix: 
       - 
         uses: actions/upload-artifact@v2
         with:
@@ -185,8 +179,6 @@ jobs:
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          shell: 
-          precommand_prefix:  
           run: Rscript -e 'library(TwoSampleMR)'
   Run_Vitamin_D_2SMR:
     needs: [variables,build_docker]
@@ -214,8 +206,6 @@ jobs:
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          shell: 
-          precommand_prefix: 
           options: -v ${{ github.workspace }}:/work 
           run: Rscript /work/scripts/knit.R -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
       -
