@@ -25,6 +25,9 @@ args <- parser$parse_args()
 rmarkdown::render(
   input = args$input_file,
   output_format = "pdf_document",
-  params = list(skip_LD_api = FALSE),
-  output_file = args$output_file
+  params = list(
+  	skip_LD_api = FALSE, 
+  	use_cache = FALSE
+  	),
+  output_file = args$output_file,
   )

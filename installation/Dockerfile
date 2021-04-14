@@ -32,9 +32,8 @@ COPY *post_conda_steps.* /app/
 RUN conda init
 
 ARG GITHUB_PAT=""
-RUN echo "${GITHUB_PAT}" > GITHUB_PAT
-RUN ./03-post_conda_steps.sh
-RUN rm GITHUB_PAT
+
+RUN GITHUB_PAT=${GITHUB_PAT} ./03-post_conda_steps.sh
 
 RUN conda env export -n VitaminD_MR > /app/linux_docker_env.yml
 
