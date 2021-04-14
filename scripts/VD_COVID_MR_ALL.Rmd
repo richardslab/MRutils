@@ -123,7 +123,7 @@ rsIdsFromDBSNP = glue("{params$results_dir}/{params$prefix}_rsIdsFromdbSnp.txt")
 
 ```
 ## find names for un-named snps
-```{r find_unnamed_snps, cache=TRUE, extra.cache=tools::md5sum(dir("../derived_data/","rs[0-9]*.txt", full.names = TRUE))}
+```{r find_unnamed_snps, cache=params$use_cache, full.names = TRUE))}
 ## this can take time and hits the API multiple times....
 print(glue("There are {nrow(outcome_data %>% subset(is.na(rsid)))} SNPs in the outcome data that are missing their rsid: "))
 print(outcome_data %>% subset(is.na(rsid), select = c(CHR, POS, EA, NEA)))
@@ -157,7 +157,7 @@ merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
 print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_out%>%subset(is.na(beta.out)))} variants lacking 'beta.out', and {nrow(merged_exp_and_out)} variants overall."))
 ```
 
-```{r get proxies, cache=TRUE}
+```{r get proxies, cache=params$use_cache}
 
 ##takes time (hits the LDLink API)
 proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(beta.out))$rsid, 
@@ -175,11 +175,11 @@ proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxie
 
 print(glue("need to look for rsid for {nrow(subset(proxies_in_outcome, is.na(rsid)))} "))
 
-rsIdsFromDBSNP_proxies=glue("{params$results_dir}/{params$prefix}_proxy_rsIdsFromdbSnp.txt")
+rsIdsFromDBSNP_proxies = glue("{params$results_dir}/{params$prefix}_proxy_rsIdsFromdbSnp.txt")
 ```
 
 
-```{r find proxies_missing_rsids, cache=TRUE}
+```{r find proxies_missing_rsids, cache=params$use_cache}
 proxies_in_outcome_with_missing_ids <- get_unknown_rsids_from_locus(proxies_in_outcome)
 
 write.table(x = proxies_in_outcome_with_missing_ids, file = rsIdsFromDBSNP_proxies, quote = F, sep = '\t', row.names = F)
@@ -194,11 +194,11 @@ proxies_in_outcome_with_rsids <- merge_rsids_into_gwas(proxies_in_outcome, proxi
 proxies <- proxies_raw %>% subset(rsid %in% proxies_in_outcome_with_rsids$rsid)
 
 ```
-found rsids for `r #nrow(proxies_in_outcome_with_missing_ids)` SNPs
+found rsids for `r nrow(proxies_in_outcome_with_missing_ids)` SNPs
 
 
-There are `r #nrow(proxies)` proxies 
-(of `r #nrow(proxies_raw)`) in the outcome.
+There are `r nrow(proxies)` proxies 
+(of `r nrow(proxies_raw)`) in the outcome.
 
 Merge proxies with exposure...
 ```{r merge proxies and exposure}
@@ -257,8 +257,6 @@ merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, que
 ```
 
 Total number of SNPs for use in 2-Sample MR (prior to pruning): `r nrow(merged_and_combined)`
-
-
 
 Now we need to make sure that we do not have SNPs in high LD next to each other.
 Pruning using populations: [`r glue_collapse(glue("{params$pop}"),sep=", ")`]
