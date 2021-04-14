@@ -179,7 +179,8 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
     ## the filter is here because when LDproxy_batch failes, it creates a small file with the error message...
     rsFiles <- Filter(function(x) file.info(x)$size > 1000, 
                    dir(".", "^rs[0-9]*\\.txt",full.names = TRUE))
-  })
+    
+
   # only read snps  
   proxies <- ldply(rsFiles, function(x) mutate(query_rsid = gsub("\\.txt$", "", x), read.table(x, sep = "\t")) %>% 
                     subset(R2 >= 0 & grepl("([ACGT]/[ACGT])", x = Alleles))) %>% 
@@ -188,7 +189,7 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
     mutate(CHR = gsub(pattern = "^chr", replacement = "", do.call(rbind, strsplit(as.character(Locus), split = ':', fixed = TRUE))[,1]),
                     POS = as.integer(do.call(rbind, strsplit(as.character(Locus), split = ':', fixed = TRUE))[,2])) %>% 
     subset(R2 >= r2_threshold)
-  
+  })
   proxies
 }
 
