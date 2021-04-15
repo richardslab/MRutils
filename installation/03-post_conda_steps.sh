@@ -11,6 +11,6 @@ set +e \
   && . "$(conda info --base)"/etc/profile.d/conda.sh \
   && conda activate base 
 
-conda activate VitaminD_MR
+conda activate MRutils
 R --no-save < "$BASEDIR"/post_conda_steps.R
 

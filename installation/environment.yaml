@@ -1,5 +1,5 @@
 
-name: VitaminD_MR
+name: MRutils
 channels:
   - r
   - conda-forge
