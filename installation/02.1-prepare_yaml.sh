@@ -1,5 +1,6 @@
 #!/bin/bash
 
+BASEDIR="$(dirname "$0")"
 
 unameOut="$(uname -s)"
 case "${unameOut}" in
