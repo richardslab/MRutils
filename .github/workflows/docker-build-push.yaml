@@ -115,7 +115,7 @@ jobs:
         run: df -h .
       -
         name: test exporting conda env in docker
-        uses: yfarjoun/docker-run-action@main
+        uses: yfarjoun/docker-run-action@y_1
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           options: -v ${{ github.workspace }}:/work
@@ -143,7 +143,7 @@ jobs:
         run: df -h .
       -
         name: run docker test png
-        uses: yfarjoun/docker-run-action@main
+        uses: yfarjoun/docker-run-action@y_1
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'png()'
@@ -161,7 +161,7 @@ jobs:
         run: cat file.R
       -
         name: run docker test png
-        uses: yfarjoun/docker-run-action@main
+        uses: yfarjoun/docker-run-action@y_1
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           options: -v ${{ github.workspace }}:/work
@@ -180,50 +180,50 @@ jobs:
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'library(TwoSampleMR)'
-  Run_Vitamin_D_2SMR:
-    needs: [variables,build_docker]
-    runs-on: ubuntu-latest
-    env: 
-      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
-      RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
-    steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v2
-      - 
-        name: get Raw Data
-        run: |
-          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}"     > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
-          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
-      - 
-        name: put LD Link token into a file
-        run: echo ${{ secrets.LD_LINK_TOKEN }} > ${{ github.workspace }}/LD_LINK_TOKEN
-      -
-        name: Show files available
-        run: ls -ltrR ${{ github.workspace }}
-      -
-        name: Run Vitamin D two-sample-mr
-        uses: yfarjoun/docker-run-action@main
-        with:
-          image: ${{ needs.variables.outputs.branch_tag }}
-          options: -v ${{ github.workspace }}:/work 
-          run: Rscript /work/scripts/knit.R -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
-      -
-        name: Show files available
-        if: ${{ always() }}
-        run: ls -ltrR
-      - uses: actions/upload-artifact@v2
-        with:
-          name: report_pdf
-          path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
-          if-no-files-found: error
-          retention-days: 60
-      - uses: actions/upload-artifact@v2
-        if: ${{ always() }}
-        with:
-          name: derived_data
-          path: ${{ github.workspace }}/derived_data
-          if-no-files-found: error
-          retention-days: 60
+  # Run_Vitamin_D_2SMR:
+  #   needs: [variables,build_docker]
+  #   runs-on: ubuntu-latest
+  #   env: 
+  #     RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
+  #     RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
+  #   steps:
+  #     -
+  #       name: Checkout
+  #       uses: actions/checkout@v2
+  #     - 
+  #       name: get Raw Data
+  #       run: |
+  #         curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}"     > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
+  #         curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
+  #     - 
+  #       name: put LD Link token into a file
+  #       run: echo ${{ secrets.LD_LINK_TOKEN }} > ${{ github.workspace }}/LD_LINK_TOKEN
+  #     -
+  #       name: Show files available
+  #       run: ls -ltrR ${{ github.workspace }}
+  #     -
+  #       name: Run Vitamin D two-sample-mr
+  #       uses: yfarjoun/docker-run-action@main
+  #       with:
+  #         image: ${{ needs.variables.outputs.branch_tag }}
+  #         options: -v ${{ github.workspace }}:/work 
+  #         run: Rscript /work/scripts/knit.R -i /work/scripts/VD_COVID_MR_ALL.Rmd -o /work/scripts/VD_COVID_MR_ALL.pdf
+  #     -
+  #       name: Show files available
+  #       if: ${{ always() }}
+  #       run: ls -ltrR
+  #     - uses: actions/upload-artifact@v2
+  #       with:
+  #         name: report_pdf
+  #         path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
+  #         if-no-files-found: error
+  #         retention-days: 60
+  #     - uses: actions/upload-artifact@v2
+  #       if: ${{ always() }}
+  #       with:
+  #         name: derived_data
+  #         path: ${{ github.workspace }}/derived_data
+  #         if-no-files-found: error
+  #         retention-days: 60
 
 
