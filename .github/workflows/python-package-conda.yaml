@@ -34,7 +34,7 @@ jobs:
         id: conda-build
         with:
           python-version: 3.6
-          activate-environment: VitaminD_MR
+          activate-environment: MRutils
           mamba-version: "*"
           channels: conda-forge,r,bioconda,defaults,anaconda
           channel-priority: strict
@@ -47,8 +47,8 @@ jobs:
         name: create upload-artifact
         uses: actions/upload-artifact@v2
         with:
-          name: conda-environment-linux
-          path: VitaminD_MR_linux.yaml
+          name: conda-environment-${{ runner.os }}
+          path: VitaminD_MR_${{ runner.os }}.yaml
           if-no-files-found: error
           retention-days: 60
       - 

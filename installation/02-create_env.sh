@@ -11,7 +11,7 @@ esac
 
 echo ${machine}
 
-ENV=VitaminD_MR
+ENV=MRutils
 # shellcheck source=/dev/null
 set +eu \
   && PS1='$$$ ' \
