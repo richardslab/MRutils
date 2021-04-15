@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
+      fail-fast: false
     defaults:
       run:
         shell: bash -l {0}
@@ -49,7 +50,7 @@ jobs:
         name: create envirinment
         run: |
           cd installation 
-          ./02-create-env.sh
+          ./02-create_env.sh
       - 
         name: export env
         run: conda env export > MRutils_${{ matrix.os }}.yaml 
