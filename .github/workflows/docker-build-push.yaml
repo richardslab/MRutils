@@ -8,7 +8,7 @@ on:
     branches:
       - '**'
 env:
-    dockerhub_repository: MRutils
+    dockerhub_repository: mr_utils
     dockerhub_organization: richardslab
 jobs:
   variables:
