@@ -10,8 +10,8 @@ jobs:
     name: Build Environment using Mamba
     runs-on: ${{ matrix.os }}
     strategy:
-    matrix:
-      node: ["ubuntu-latest", "macos-latest"]
+      matrix:
+        os: ["ubuntu-latest", "macos-latest"]
     defaults:
       run:
         shell: bash -l {0}
