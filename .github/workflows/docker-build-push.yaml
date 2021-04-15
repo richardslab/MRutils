@@ -102,7 +102,7 @@ jobs:
           context: installation
           push: true
           build-args: |
-            PAT_GITHUB=${{ secrets.PAT_GITHUB }} 
+            GITHUB_PAT=${{ secrets.PAT_GITHUB }} 
           tags: ${{ needs.variables.outputs.tag }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,mode=max,src=/tmp/.buildx-cache

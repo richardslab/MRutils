@@ -31,6 +31,16 @@ RUN echo "conda activate VitaminD_MR" >> ~/.bashrc
 COPY *post_conda_steps.* /app/
 RUN conda init
 
+# some of the commands are rate limited and may fail in the absence of a GITHUB_PAT. This PAT 
+# doesn't need to have ANY authorizations, it simply identifies the user who is downloading from 
+# public repositories.
+
+# if you want to use this option, you must build the docker and provide a --build-arg GITHUB_PAT 
+# where  GITHUB_PAT is an environment variable containing the PAT. so for example
+# GITHUB_PAT=$(cat github_pat_file) docker build --build-arg GITHUB_PAT .
+# would work if github_pat_file is a local file containing the pat.
+# if building in a CI, you'll need to provide this PAT via a "secret" mechanism.
+
 ARG GITHUB_PAT=""
 
 RUN GITHUB_PAT=${GITHUB_PAT} ./03-post_conda_steps.sh
