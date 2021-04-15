@@ -1,9 +1,13 @@
 #!/usr/bin/env R
 
-Sys.setenv(TAR = '/bin/tar')
-install.packages(c("devtools","MendelianRandomization","mr.raps"), repos = "https://cloud.r-project.org") # for some reason, now I need version 1.2.1 and that's not available via conda....
+Sys.setenv(TAR = 'env tar')
+install.packages(c(
+	"devtools", 
+	"MendelianRandomization", 
+	"mr.raps", 
+	"rstudio"), repos = "https://cloud.r-project.org") # for some reason, now I need version 1.2.1 and that's not available via conda....
 
-install <- function(repo, ref, dependencies=FALSE){
+install <- function(repo, ref, dependencies = FALSE){
 	devtools::install_github(repo,
 		ref = ref,
 		quiet = FALSE,
@@ -22,8 +26,14 @@ install("MRCIEU/MRInstruments","0.3.3")
 # it would be better to fix this, but I was unsuccessful
 
 # devtools::install_version("meta",version = "4.18-0",repos = "http://cran.us.r-project.org")
+# tmvnsim_1.0-2
+# CompQuadForm_1.4.3
+# mnormt_2.0.2
+# meta_4.18-0
+# psych_2.1.3
+# cowplot_1.1.1
+# gridExtra_2.3
 
-
-install("MRCIEU/TwoSampleMR", "0.5.4", dependencies=NA)
+install("MRCIEU/TwoSampleMR", "0.5.4", dependencies = NA)
 
 
