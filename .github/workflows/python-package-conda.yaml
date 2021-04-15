@@ -6,9 +6,12 @@ on:
     branch:
       - ['**']
 jobs:
-  testStepsAndLint:
+  build-conda-env:
     name: Build Environment using Mamba
-    runs-on: "ubuntu-latest"
+    runs-on: ${{ matrix.os }}
+    strategy:
+    matrix:
+      node: ["ubuntu-latest", "macos-latest"]
     defaults:
       run:
         shell: bash -l {0}
@@ -49,6 +52,11 @@ jobs:
           if-no-files-found: error
           retention-days: 60
       - 
+        name: test_curl
+        run: |
+          conda activate VitaminD_MR
+          R -e 'library(curl);'
+      -
         name: post-conda-steps
         run: |
           installation/03-post_conda_steps.sh 
