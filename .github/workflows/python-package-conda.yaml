@@ -76,92 +76,92 @@ jobs:
           conda run -n VitaminD_MR Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
 
-  run-VDMR-conda:
-    name: Build Environment and also do the VDMR analysis
-    runs-on: "ubuntu-latest"
-    env: 
-      RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
-      RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - 
-        uses: actions/checkout@v2
-      - 
-        name: Cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if installation/environment.yaml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('installation/environment.yaml') }}
-      - 
-        uses: conda-incubator/setup-miniconda@v2
-        id: conda-build
-        with:
-          python-version: 3.6
-          activate-environment: VitaminD_MR
-          mamba-version: "*"
-          channels: conda-forge,r,bioconda,defaults,anaconda
-          channel-priority: strict
-          environment-file: installation/environment.yaml
-          use-only-tar-bz2: true
-      -  
-        name: post-conda-steps
-        run: |
-          installation/03-post_conda_steps.sh 
-      - 
-        name: export env
-        run: conda env export > VitaminD_MR_frozen.yaml 
-      - 
-        name: create upload-artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: conda-environment
-          path: VitaminD_MR_frozen.yaml
-          if-no-files-found: error
-          retention-days: 60
-      - 
-        name: get raw data For test
-        run: |
-          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}"     > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
-          curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
-      - 
-        name: put LD Link token into a file
-        run: echo ${{ secrets.LD_LINK_TOKEN }} > ${{ github.workspace }}/LD_LINK_TOKEN
-      -
-        name: Show files available
-        run: ls -ltrR ${{ github.workspace }}
-      -
-        name: Run Vitamin D two-sample-mr in conda environment
-        env: 
-          CWD: ${{ github.workspace }}/scripts
-        run: >
-          conda run -n VitaminD_MR 
-          Rscript $CWD/knit.R 
-          -i $CWD/VD_COVID_MR_ALL.Rmd 
-          -o $CWD/VD_COVID_MR_ALL.pdf
-      -
-        name: Show files available
-        if: ${{ always() }}
-        run: ls -ltrR
-      - 
-        uses: actions/upload-artifact@v2
-        with:
-          name: report_pdf
-          path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
-          if-no-files-found: error
-          retention-days: 60
-      - 
-        uses: actions/upload-artifact@v2
-        if: ${{ always() }}
-        with:
-          name: derived_data
-          path: ${{ github.workspace }}/derived_data
-          if-no-files-found: error
-          retention-days: 60
+  # run-VDMR-conda:
+  #   name: Build Environment and also do the VDMR analysis
+  #   runs-on: "ubuntu-latest"
+  #   env: 
+  #     RESULTS_BASE_URL: https://storage.googleapis.com/covid19-hg-public/20200915/results/20201020
+  #     RESULTS_FILE: COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
+  #   defaults:
+  #     run:
+  #       shell: bash -l {0}
+  #   steps:
+  #     - 
+  #       uses: actions/checkout@v2
+  #     - 
+  #       name: Cache conda
+  #       uses: actions/cache@v2
+  #       env:
+  #         # Increase this value to reset cache if installation/environment.yaml has not changed
+  #         CACHE_NUMBER: 0
+  #       with:
+  #         path: ~/conda_pkgs_dir
+  #         key:
+  #           ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+  #           hashFiles('installation/environment.yaml') }}
+  #     - 
+  #       uses: conda-incubator/setup-miniconda@v2
+  #       id: conda-build
+  #       with:
+  #         python-version: 3.6
+  #         activate-environment: VitaminD_MR
+  #         mamba-version: "*"
+  #         channels: conda-forge,r,bioconda,defaults,anaconda
+  #         channel-priority: strict
+  #         environment-file: installation/environment.yaml
+  #         use-only-tar-bz2: true
+  #     -  
+  #       name: post-conda-steps
+  #       run: |
+  #         installation/03-post_conda_steps.sh 
+  #     - 
+  #       name: export env
+  #       run: conda env export > VitaminD_MR_frozen.yaml 
+  #     - 
+  #       name: create upload-artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: conda-environment
+  #         path: VitaminD_MR_frozen.yaml
+  #         if-no-files-found: error
+  #         retention-days: 60
+  #     - 
+  #       name: get raw data For test
+  #       run: |
+  #         curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}"     > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}"
+  #         curl -SL "${{ env.RESULTS_BASE_URL }}/${{ env.RESULTS_FILE }}.tbi" > "${{ github.workspace }}/raw_data/${{ env.RESULTS_FILE }}.tbi"
+  #     - 
+  #       name: put LD Link token into a file
+  #       run: echo ${{ secrets.LD_LINK_TOKEN }} > ${{ github.workspace }}/LD_LINK_TOKEN
+  #     -
+  #       name: Show files available
+  #       run: ls -ltrR ${{ github.workspace }}
+  #     -
+  #       name: Run Vitamin D two-sample-mr in conda environment
+  #       env: 
+  #         CWD: ${{ github.workspace }}/scripts
+  #       run: >
+  #         conda run -n VitaminD_MR 
+  #         Rscript $CWD/knit.R 
+  #         -i $CWD/VD_COVID_MR_ALL.Rmd 
+  #         -o $CWD/VD_COVID_MR_ALL.pdf
+  #     -
+  #       name: Show files available
+  #       if: ${{ always() }}
+  #       run: ls -ltrR
+  #     - 
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: report_pdf
+  #         path: ${{ github.workspace }}/scripts/VD_COVID_MR_ALL.pdf
+  #         if-no-files-found: error
+  #         retention-days: 60
+  #     - 
+  #       uses: actions/upload-artifact@v2
+  #       if: ${{ always() }}
+  #       with:
+  #         name: derived_data
+  #         path: ${{ github.workspace }}/derived_data
+  #         if-no-files-found: error
+  #         retention-days: 60
 
