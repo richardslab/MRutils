@@ -40,20 +40,16 @@ jobs:
       #     channel-priority: strict
       #     environment-file: installation/environment.yaml
       #     use-only-tar-bz2: true
-      
       - 
         name: install conda
         run: |
-          cd installation ;
+          cd installation 
           ./01-install_conda.sh
       - 
         name: create envirinment
         run: |
+          cd installation 
           ./02-create-env.sh
-      - 
-        name: post conda steps
-        run: |
-          ./03-post_conda_steps.sh
       - 
         name: export env
         run: conda env export > MRutils_${{ matrix.os }}.yaml 
@@ -66,6 +62,11 @@ jobs:
           if-no-files-found: error
           retention-days: 60
       - 
+        name: post conda steps
+        run: |
+          cd installation 
+          ./03-post_conda_steps.sh
+      -
         name: test_curl
         run: |
           conda activate MRutils
