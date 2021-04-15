@@ -29,17 +29,31 @@ jobs:
           key:
             ${{ matrix.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('installation/environment.yaml') }}
+      # - 
+      #   uses: conda-incubator/setup-miniconda@v2
+      #   id: conda-build
+      #   with:
+      #     python-version: 3.6
+      #     activate-environment: MRutils
+      #     mamba-version: "*"
+      #     channels: conda-forge,r,bioconda,defaults,anaconda
+      #     channel-priority: strict
+      #     environment-file: installation/environment.yaml
+      #     use-only-tar-bz2: true
+      
       - 
-        uses: conda-incubator/setup-miniconda@v2
-        id: conda-build
-        with:
-          python-version: 3.6
-          activate-environment: MRutils
-          mamba-version: "*"
-          channels: conda-forge,r,bioconda,defaults,anaconda
-          channel-priority: strict
-          environment-file: installation/environment.yaml
-          use-only-tar-bz2: true
+        name: install conda
+        run: |
+          cd installation ;
+          ./01-install_conda.sh
+      - 
+        name: create envirinment
+        run: |
+          ./02-create-env.sh
+      - 
+        name: post conda steps
+        run: |
+          ./03-post_conda_steps.sh
       - 
         name: export env
         run: conda env export > MRutils_${{ matrix.os }}.yaml 
