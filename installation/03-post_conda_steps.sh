@@ -12,6 +12,5 @@ set +e \
   && conda activate base 
 
 conda activate VitaminD_MR
-echo GH=$GITHUB_PAT
 R --no-save < "$BASEDIR"/post_conda_steps.R
 
