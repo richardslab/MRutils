@@ -30,29 +30,24 @@ jobs:
           key:
             ${{ matrix.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('installation/environment.yaml') }}
-      # - 
-      #   uses: conda-incubator/setup-miniconda@v2
-      #   id: conda-build
-      #   with:
-      #     python-version: 3.6
-      #     activate-environment: MRutils
-      #     mamba-version: "*"
-      #     channels: conda-forge,r,bioconda,defaults,anaconda
-      #     channel-priority: strict
-      #     environment-file: installation/environment.yaml
-      #     use-only-tar-bz2: true
       - 
-        name: install conda
+        name: prepare for conda
         run: |
           cd installation 
-          ./01-install_conda.sh
+          ./02.1-prepare_yaml.sh
       - 
-        name: create envirinment
-        run: |
-          cd installation 
-          ./02-create_env.sh
-      - 
-        name: export env
+        uses: conda-incubator/setup-miniconda@v2
+        id: conda-build
+        with:
+          python-version: 3.6
+          activate-environment: MRutils
+          mamba-version: "*"
+          channels: conda-forge,r,bioconda,defaults,anaconda
+          channel-priority: strict
+          environment-file: installation/environment_modified.yaml
+          use-only-tar-bz2: true
+      -
+        name: export environment
         run: conda env export > MRutils_${{ matrix.os }}.yaml 
       - 
         name: create upload-artifact
@@ -62,18 +57,13 @@ jobs:
           path: MRutils_${{ matrix.os }}.yaml
           if-no-files-found: error
           retention-days: 60
-      - 
-        name: post conda steps
-        run: |
-          cd installation 
-          ./03-post_conda_steps.sh
       -
-        name: test_curl
+        name: test curl
         run: |
           conda activate MRutils
           R -e 'library(curl);'
       -
-        name: post-conda-steps
+        name: post conda steps
         run: |
           installation/03-post_conda_steps.sh 
       -
@@ -85,17 +75,12 @@ jobs:
           conda config --show
           printenv | sort
       - 
-        name: test-r-libraries
+        name: Test R libraries (Two Sample MR and LD-LinkR)
         run: |
           conda activate MRutils
           R -e 'library(TwoSampleMR); library(LDlinkR);'
       - 
-        name: test-r-libraries
-        run: >
-          conda run -n MRutils Rscript -e 
-          'library(TwoSampleMR); library(LDlinkR);'
-      - 
-        name: test-subset
+        name: Test dplyr
         run: >
           conda run -n MRutils Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'

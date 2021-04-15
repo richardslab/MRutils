@@ -22,8 +22,10 @@ ENV ENV=MRutils
 # Make RUN commands use `bash --login`:
 #SHELL ["/bin/bash", "--login"]
 
-COPY 02-create_env.sh environment.yaml /app/
-RUN ./02-create_env.sh
+
+COPY 02.1-prepare_yaml.sh 02.2-create_env.sh environment.yaml /app/
+RUN ./02.1-prepare_yaml.sh
+RUN ./02.2-create_env.sh
 
 RUN conda init bash
 RUN echo "conda activate ${ENV}" >> ~/.bashrc
