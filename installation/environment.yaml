@@ -21,7 +21,6 @@ dependencies:
   - r-ggplot2  # needs channel conda-forge
   - r-ldlinkr>=1.0.0 # needs channel bioconda
   - r-curl>=3.3 
-  - r-devtools==2.4.0
   - r-plotly
   - r-openxlsx
   - r-gmp
@@ -35,4 +34,12 @@ dependencies:
   - r-gargle=1.1.0
   - r-googleauthr=1.4.0
   - r-bh=1.75.0_0
-
+# TODO: I was unable to install these via conda, 
+# they are currently installed during the github_install step of TwoSampleMR
+# it would be better if we found a way to lock down the version of these libraries...
+  #  - r-devtools==2.4.0
+  # - r::r-gridextra=2.2.1 
+  # - r-cowplot 0.9.4
+  # - r-psych<=1.9.12
+  # - r-meta<=4.11_0   
+  
