@@ -27,7 +27,7 @@ jobs:
         with:
           path: ~/conda_pkgs_dir
           key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            ${{ matrix.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('installation/environment.yaml') }}
       - 
         uses: conda-incubator/setup-miniconda@v2
@@ -42,19 +42,19 @@ jobs:
           use-only-tar-bz2: true
       - 
         name: export env
-        run: conda env export > VitaminD_MR_linux.yaml 
+        run: conda env export > MRutils_${{ matrix.os }}.yaml 
       - 
         name: create upload-artifact
         uses: actions/upload-artifact@v2
         with:
-          name: conda-environment-${{ runner.os }}
-          path: VitaminD_MR_${{ runner.os }}.yaml
+          name: conda-environment-${{ matrix.os }}
+          path: MRutils_${{ matrix.os }}.yaml
           if-no-files-found: error
           retention-days: 60
       - 
         name: test_curl
         run: |
-          conda activate VitaminD_MR
+          conda activate MRutils
           R -e 'library(curl);'
       -
         name: post-conda-steps
@@ -64,24 +64,24 @@ jobs:
         name: Conda info
         run: |
           conda info --envs
-          conda list -n VitaminD_MR
+          conda list -n MRutils
           conda config --show-sources
           conda config --show
           printenv | sort
       - 
         name: test-r-libraries
         run: |
-          conda activate VitaminD_MR
+          conda activate MRutils
           R -e 'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: test-r-libraries
         run: >
-          conda run -n VitaminD_MR Rscript -e 
+          conda run -n MRutils Rscript -e 
           'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: test-subset
         run: >
-          conda run -n VitaminD_MR Rscript -e 
+          conda run -n MRutils Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
 
   # run-VDMR-conda:
@@ -112,7 +112,7 @@ jobs:
   #       id: conda-build
   #       with:
   #         python-version: 3.6
-  #         activate-environment: VitaminD_MR
+  #         activate-environment: MRutils
   #         mamba-version: "*"
   #         channels: conda-forge,r,bioconda,defaults,anaconda
   #         channel-priority: strict
@@ -124,13 +124,13 @@ jobs:
   #         installation/03-post_conda_steps.sh 
   #     - 
   #       name: export env
-  #       run: conda env export > VitaminD_MR_frozen.yaml 
+  #       run: conda env export > MRutils_frozen.yaml 
   #     - 
   #       name: create upload-artifact
   #       uses: actions/upload-artifact@v2
   #       with:
   #         name: conda-environment
-  #         path: VitaminD_MR_frozen.yaml
+  #         path: MRutils_frozen.yaml
   #         if-no-files-found: error
   #         retention-days: 60
   #     - 
