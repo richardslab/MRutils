@@ -1,5 +1,3 @@
-
-name: MRutils
 channels:
   - r
   - conda-forge
@@ -10,19 +8,18 @@ channels:
 dependencies:
   - python=3.6
   - tabix
-  - icu=58.1 
   - gfortran_linux-64 #{{linux-only}}
-  - libgit2
-  - r::r-stringi # can't find libicui18n otherwise...
+  - r::r-stringi
   - r-argparse
   - r-tidyverse>=1.2
-  - r-base=3.6.3
+  - r-base=3.6.1
   - r-essentials=3.6.0
   - r-readxl>=1.3
-  # - rstudio=1.0.44 having trouble installing this via conda as well....
+  - rstudio>=1.1
   - r-ggplot2  # needs channel conda-forge
   - r-ldlinkr>=1.0.0 # needs channel bioconda
   - r-curl>=3.3 
+  - r-devtools
   - r-plotly
   - r-openxlsx
   - r-gmp
@@ -32,11 +29,12 @@ dependencies:
   - r-pbkrtest
   - r-car
   - r-mgsub
-  - r-validate
-  - r-gargle=1.1.0
-  - r-googleauthr=1.4.0
-  - r-bh=1.75.0_0
-  - r-matrix
+
+  # - r-validate
+  # - r-gargle=1.1.0
+  # - r-googleauthr=1.4.0
+  # - r-bh=1.75.0_0
+  # - r-matrix
 # TODO: I was unable to install these via conda, 
 # they are currently installed during the github_install step of TwoSampleMR
 # it would be better if we found a way to lock down the version of these libraries...
