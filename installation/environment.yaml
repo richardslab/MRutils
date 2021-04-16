@@ -9,6 +9,7 @@ dependencies:
   - python=3.6
   - tabix
   - gfortran_linux-64 #{{linux-only}}
+  - libgit2 #{{osx-only}}
   - r::r-stringi
   - r-argparse
   - r-tidyverse>=1.2
