@@ -10,7 +10,6 @@ install <- function(repo, ref){
 	devtools::install_github(repo,
 		ref = ref,
 		quiet = FALSE,
-		dependencies = dependencies,
 		upgrade = FALSE)
 }
 
