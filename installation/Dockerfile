@@ -18,7 +18,6 @@ RUN ./01-install_conda.sh
 ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
 
-ENV ENV=MRutils
 # Make RUN commands use `bash --login`:
 #SHELL ["/bin/bash", "--login"]
 
@@ -28,7 +27,7 @@ RUN ./02.1-prepare_yaml.sh
 RUN ./02.2-create_env.sh
 
 RUN conda init bash
-RUN echo "conda activate ${ENV}" >> ~/.bashrc
+RUN echo "conda activate MRutils" >> ~/.bashrc
 
 COPY *post_conda_steps.* /app/
 RUN conda init
@@ -47,10 +46,10 @@ ARG GITHUB_PAT=""
 
 RUN GITHUB_PAT=${GITHUB_PAT} ./03-post_conda_steps.sh
 
-RUN conda env export -n ${ENV} > /app/linux_docker_env.yml
+RUN conda env export -n MRutils > /app/linux_docker_env.yml
 
 COPY Dockerfile /app/
 
-ENTRYPOINT ["conda", "run", "-n", "${ENV}", "--no-capture-output"]
+ENTRYPOINT ["conda", "run", "-n", "MRutils", "--no-capture-output"]
 
 CMD ["bash"]
