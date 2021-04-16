@@ -106,7 +106,7 @@ jobs:
           tags: ${{ needs.variables.outputs.tag }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,mode=max,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cachex`
   test_conda_info:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
@@ -121,7 +121,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             conda info
-            conda env export > /work//work/MRutils_linux.yaml  
+            conda env export > /work/MRutils_linux.yaml  
             ls /work
       -
         name: Show files available
