@@ -21,6 +21,11 @@ jobs:
       - 
         uses: actions/checkout@v2
       - 
+        name: prepare for conda
+        run: |
+          cd installation 
+          ./02.1-prepare_yaml.sh
+      - 
         name: Cache conda
         uses: actions/cache@v2
         env:
@@ -29,13 +34,8 @@ jobs:
         with:
           path: ~/conda_pkgs_dir
           key:
-            ${{ matrix.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('installation/environment.yaml') }}
-      - 
-        name: prepare for conda
-        run: |
-          cd installation 
-          ./02.1-prepare_yaml.sh
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('installation/environment-modified.yaml') }}
       - 
         uses: conda-incubator/setup-miniconda@v2
         id: conda-build
