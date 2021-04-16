@@ -10,7 +10,9 @@ channels:
 dependencies:
   - python=3.6
   - tabix
+  - icu=58.1 
   - gfortran_linux-64 #{{linux-only}}
+  - libgit2
   - r::r-stringi # can't find libicui18n otherwise...
   - r-argparse
   - r-tidyverse>=1.2
@@ -34,6 +36,7 @@ dependencies:
   - r-gargle=1.1.0
   - r-googleauthr=1.4.0
   - r-bh=1.75.0_0
+  - r-matrix
 # TODO: I was unable to install these via conda, 
 # they are currently installed during the github_install step of TwoSampleMR
 # it would be better if we found a way to lock down the version of these libraries...
