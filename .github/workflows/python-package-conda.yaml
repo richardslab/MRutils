@@ -25,6 +25,10 @@ jobs:
         run: |
           cd installation 
           ./02.1-prepare_yaml.sh
+     - 
+        name: show yaml
+        run: |
+          cat installation/environment_modified.yaml
       - 
         name: Cache conda
         uses: actions/cache@v2
