@@ -11,7 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ["ubuntu-18.04", "macos-10.15"]
+        # os: ["ubuntu-18.04", "macos-10.15"] TODO: fix failure due to missing libgit2
+        os: ["ubuntu-18.04"]
       fail-fast: false
     defaults:
       run:
