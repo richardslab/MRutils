@@ -121,7 +121,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             conda info
-            conda env export > /work/VitaminD_MR_frozen.yaml 
+            conda env export > /work//work/MRutils_linux.yaml  
             ls /work
       -
         name: Show files available
@@ -130,8 +130,8 @@ jobs:
         name: create upload-artifact
         uses: actions/upload-artifact@v2
         with:
-          name: conda-environment
-          path: VitaminD_MR_frozen.yaml
+          name: conda-environment-linux
+          path: MRutils_linux.yaml
           if-no-files-found: error
           retention-days: 60 
   small_docker_tests:
