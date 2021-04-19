@@ -1,10 +1,13 @@
-Package: VitaminDMRredo
-Version: 0.0.0.1
+Package: MRutils
+Version: 0.0.1.0
 Date: 2021-03-10
-Title: My First Attempt at Vitamin-D MR / COVID reproduction
+Title: Utility functions for preparing data for 2-sample MR
 Authors@R: c(person("Yossi", "Farjoun", role = c("aut", "cre"),
                      email = "farjoun@gmail.com"))
 Depends: R (>= 3.6.3)
 Depends_backup: R (>= 3.6.3), TwoSampleMR, LDlinkR, dplyr
-Description: This is my first R Package. Also my first attempt at reproducing the Vitamin-D / COVID MR paper.
+Description: This is my first R Package.
 License: GPL (>= 2)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
