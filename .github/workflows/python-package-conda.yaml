@@ -70,7 +70,7 @@ jobs:
       -
         name: post conda steps
         run: |
-          GITHUB_PAT=${{secret.PAT_GITHUB}} installation/03-post_conda_steps.sh 
+          GITHUB_PAT=${{ secrets.PAT_GITHUB }} installation/03-post_conda_steps.sh 
       -
         name: Conda info
         run: |
