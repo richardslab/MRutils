@@ -31,6 +31,7 @@ dependencies:
   - r-car
   - r-mgsub
   - r-validate
+ - r-testthat=2.0.0
   
   # - r-gargle=1.1.0
   # - r-googleauthr=1.4.0
