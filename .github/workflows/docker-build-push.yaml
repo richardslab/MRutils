@@ -106,7 +106,7 @@ jobs:
           tags: ${{ needs.variables.outputs.tag }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,mode=max,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cachex`
+          cache-to: type=local,dest=/tmp/.buildx-cache
   test_conda_info:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest

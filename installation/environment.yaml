@@ -30,8 +30,8 @@ dependencies:
   - r-pbkrtest
   - r-car
   - r-mgsub
-
-  # - r-validate
+  - r-validate
+  
   # - r-gargle=1.1.0
   # - r-googleauthr=1.4.0
   # - r-bh=1.75.0_0
