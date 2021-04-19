@@ -1,53 +1,54 @@
 
-require(glue)
-require(jsonlite)
-require(dplyr)
-require(LDlinkR)
-require(plyr)
-require(reshape2)
-require(TwoSampleMR)
-require(mgsub)
-require(purrr)
-require(validate)
+library(glue)
+library(jsonlite)
+library(dplyr)
+library(LDlinkR)
+library(plyr)
+library(reshape2)
+library(TwoSampleMR)
+library(mgsub)
+library(purrr)
+library(validate)
+library(magrittr)
 
-required_headers <- 
-  c("rsid", "CHR", "POS", "P", "beta", "EA", "NEA", "EAF", "SE")
+required_headers <- c("rsid", "CHR", "POS", "P", "beta", "EA", "NEA", "EAF", "SE")
 
 
-valid_contigs = c(1:22,"X","Y")
+valid_contigs <- c(1:22, "X", "Y")
 
 gwas_rules <- validator(field_format(rsid, "rs*"),
-                        CHR %in% contigs,
+                        CHR %in% valid_contigs,
                         POS > 0,
                         field_format(EA, "[ACGT]", type = "regex"),
                         field_format(NEA, "[ACGT]", type = "regex"),
-                        in_range(EAF , 0, 1),
+                        in_range(EAF, 0, 1),
                         is.numeric(beta),
                         is.numeric(SE),
-                        in_range(SE, min = 0, Inf),
-                        in_range(P, 0, 1)
+                        in_range(SE, min = 0, Inf,strict = TRUE),
+                        in_range(P, 0, 1, strict = TRUE)
 )
 
 
-# it is expected that snps has two columns 'CHR' and 'POS' 
+# it is expected that snps has two columns 'CHR' and 'POS'
 # indicating the chromosome and the  (1-based) position of the snp in question.
 
-extract_snps_from_bgzip <- 
+extract_snps_from_bgzip <-
   function(outcome, snps, chr_col = 1, pos_col = 2, comment_char = "#") {
   #nolint (unused variable)
-  region <- snps %>% 
-    alply(1, function(x) with(x, glue("{CHR}:{POS}-{POS}"))) %>% 
-    { do.call(paste, .) }
+  region <- snps %>%
+    alply(1, function(x) with(x, glue("{CHR}:{POS}-{POS}"))) %>% { 
+      do.call(paste, .) 
+      }
   
-  temp_output <- tempfile(pattern = "subsetted_exposure__", 
-                          tmpdir = tempdir(), 
+  temp_output <- tempfile(pattern = "subsetted_exposure__",
+                          tmpdir = tempdir(),
                           fileext = ".txt")
  
   cmd <- glue("tabix -f -b {pos_col} -c '{comment_char}' -s {chr_col} {outcome} {region} > {temp_output}")
   system(cmd)
-  col_names <- read.table(outcome, 
-                          header = TRUE, 
-                          nrows = 1, 
+  col_names <- read.table(outcome,
+                          header = TRUE,
+                          nrows = 1,
                           comment.char = "") %>% names()
   col_names[1] <- "CHR"
   outcome_data <- read.table(temp_output, col.names = col_names)
@@ -71,23 +72,44 @@ filter_and_write_exposure_data <- function(data,
   
   data %<>% select(all_of(required_headers))
   
-  write.table(data, glue("{location_prefix}exp_extracted_SNPs.tsv"), 
-              sep = "\t", 
-              row.names = FALSE, 
+  write.table(data, glue("{location_prefix}exp_extracted_SNPs.tsv"),
+              sep = "\t",
+              row.names = FALSE,
               quote = FALSE)
   
-  significant_snps = data %>% subset(P < pvalue_threshold & EAF >= rare_threshold & NEA >= rare_threshold) 
-  write.table(significant_snps, 
-              glue("{location_prefix}exp_significant_SNPs.tsv"), 
-              sep = "\t", 
-              row.names = FALSE, 
+  significant_snps <- data %>% subset(P < pvalue_threshold & EAF >= rare_threshold & 1 - EAF >= rare_threshold)
+  write.table(significant_snps,
+              glue("{location_prefix}exp_significant_SNPs.tsv"),
+              sep = "\t",
+              row.names = FALSE,
               quote = FALSE)
   significant_snps
 }
 
 
+#' Title Get rsid name from position
+#' This method accesses the NCI's API and queries a position (CHR & POS) and variant (REF & ALT)
+#' to obtain a rsid. If it fails, it will attempt to swap REF and ALT before giving up.
+#'
+#' @param chrom The name of the contig for the SNP
+#' @param pos The (1-based) position of the SNP 
+#' @param ref The reference allele
+#' @param alt The alternate allele
+#' @param assembly Which reference genome to use ("hg19" or "hg38")
+#'
+#' @return an rsid identifier of the position provided
+#' @export
+#'
+#' @examples 
+#' 
+#'get_rsid_from_position("9", 125711603,	"C",	"A") # "rs10760259"
+#' 
+#' 
+#' 
 get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
-  tryCatch({
+  
+  #assertthat::assert_that(assembly %in% c("hg19", "hg38"), "We currently only support reference builds hg19 and hg38.")
+  rsid=tryCatch({
     baseURL1 <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{ref}/{alt}/contextuals?assembly={assembly}"
     baseURL1_swapped <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
     
@@ -133,6 +155,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
     NULL
   }
   )
+  rsid
 }
 
 
@@ -154,10 +177,10 @@ get_unknown_rsids_from_locus <- function(gwas, build = "hg19") {
 }
 
 
-merge_rsids_into_gwas <- function(gwas,rsids) {
+merge_rsids_into_gwas <- function(gwas, rsids) {
   
   gwas_with_ids <- mutate(gwas, rsid = as.character(rsid)) %>%
-    merge(subset(rsids,select = c(CHR, POS, rsid)), all.x = T, by = c("CHR","POS")) %>%
+    merge(subset(rsids, select = c(CHR, POS, rsid)), all.x = T, by = c("CHR","POS")) %>%
     mutate(rsid = adply(do.call(cbind, list(rsid.y, rsid.x)), 1, function(x) first(na.omit(x)))$V1, 
                                rsid.x = NULL, 
                                rsid.y = NULL)
@@ -178,7 +201,7 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
     
     ## the filter is here because when LDproxy_batch failes, it creates a small file with the error message...
     rsFiles <- Filter(function(x) file.info(x)$size > 1000, 
-                   dir(".", "^rs[0-9]*\\.txt",full.names = TRUE))
+                   dir(".", "^rs[0-9]*\\.txt"))
     
 
   # only read snps  
