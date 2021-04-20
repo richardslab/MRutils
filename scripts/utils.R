@@ -107,9 +107,7 @@ filter_and_write_exposure_data <- function(data,
 #' 
 #' 
 get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
-  
-  #assertthat::assert_that(assembly %in% c("hg19", "hg38"), "We currently only support reference builds hg19 and hg38.")
-  rsid=tryCatch({
+  retVal=tryCatch({
     baseURL1 <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{ref}/{alt}/contextuals?assembly={assembly}"
     baseURL1_swapped <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
     
@@ -119,9 +117,9 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
       read_json(url)$data$spdis[[1]]
     },
     error = function(e) {
-      print("there was an error (1):")
-      print(e)
-      print("Trying swapping ref and alt")
+      warning("There was an error (1):")
+      warning(e)
+      warning("Trying to swap ref and alt")
       Sys.sleep(1)
       read_json(tee(glue(baseURL1_swapped)))$data$spdis[[1]]
     })
@@ -140,9 +138,9 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
       paste0("rs", read_json(url)$data$rsids[[1]])
     },
     error = function(e){
-      print("there was an error (2):")
-      print(e)
-      print("Trying swapping ref and alt")
+      warning("There was an error (2):")
+      warning(e)
+      warning("Trying to swap ref and alt")
       url <- tee(glue(baseURL2_swapped))
       Sys.sleep(1)
       id <- read_json(url)$data$rsids[[1]]
@@ -150,12 +148,12 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
     })
   },
   error = function(e) {
-    print("there was an error:")
-    print(e)
+    warning("there was an error:")
+    warning(e)
     NULL
   }
   )
-  rsid
+  as.character(retVal)
 }
 
 
