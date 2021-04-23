@@ -89,6 +89,11 @@ jobs:
         run: >
           conda run -n MRutils Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
+      - 
+        name: Run R tests
+        run: >
+          conda run -n MRutils 
+          Rscript -e 'devtools::test()'
 
   # run-VDMR-conda:
   #   name: Build Environment and also do the VDMR analysis

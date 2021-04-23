@@ -180,6 +180,16 @@ jobs:
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'library(TwoSampleMR)'
+
+      - 
+        name: Run R tests in docker image
+        uses: yfarjoun/docker-run-action@main
+        with:
+          image: ${{ needs.variables.outputs.branch_tag }}
+          run: >
+            conda run -n MRutils 
+            Rscript -e 'devtools::test()'
+
   # Run_Vitamin_D_2SMR:
   #   needs: [variables,build_docker]
   #   runs-on: ubuntu-latest

@@ -1,7 +1,4 @@
-library(testthat)
-library(MRutils)
-
-test_check("MRutils")
+# helper-expects
 
 
 expect_warnings <- function(object, times=1){
