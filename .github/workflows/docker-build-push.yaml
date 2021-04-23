@@ -199,8 +199,8 @@ jobs:
           image: ${{ needs.variables.outputs.branch_tag }}
           options: -v ${{ github.workspace }}:/app
           run: |
-          cd /app;
-          Rscript file.R
+            cd /app;
+            Rscript file.R
 
   # Run_Vitamin_D_2SMR:
   #   needs: [variables,build_docker]
