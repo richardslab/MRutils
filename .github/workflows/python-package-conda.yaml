@@ -93,7 +93,7 @@ jobs:
         name: Run R tests
         run: |
           conda activate MRutils
-          R -e 'devtools::test();'
+          R -e 'devtools::test("MRutils");'
 
   # run-VDMR-conda:
   #   name: Build Environment and also do the VDMR analysis

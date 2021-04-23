@@ -185,7 +185,7 @@ jobs:
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          run: Rscript -e 'devtools::test()'
+          run: Rscript -e 'devtools::test("MRutils")'
 
   # Run_Vitamin_D_2SMR:
   #   needs: [variables,build_docker]
