@@ -173,7 +173,6 @@ jobs:
           path: diamonds.png
           if-no-files-found: error
           retention-days: 30
-  
       -
         name: run docker test two-sample-mr
         uses: yfarjoun/docker-run-action@main
@@ -186,9 +185,7 @@ jobs:
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          run: >
-            conda run -n MRutils 
-            Rscript -e 'devtools::test()'
+          run: Rscript -e 'devtools::test()'
 
   # Run_Vitamin_D_2SMR:
   #   needs: [variables,build_docker]
