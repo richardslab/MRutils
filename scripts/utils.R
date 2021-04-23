@@ -59,10 +59,10 @@ extract_snps_from_bgzip <-
 chimeric <- c("(A/T)", "(T/A)", "(C/G)", "(G/C)")
 
 
-tee <- function(x) {
-  print(x)
-  x
-}
+# tee <- function(x) {
+#   print(x)
+#   x
+# }
 
 
 filter_and_write_exposure_data <- function(data,
@@ -112,7 +112,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
     baseURL1_swapped <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
     
     f <- tryCatch({
-      url <- tee(glue(baseURL1))
+      url <- glue(baseURL1)
       Sys.sleep(1)
       read_json(url)$data$spdis[[1]]
     },
@@ -121,7 +121,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
       warning(e)
       warning("Trying to swap ref and alt")
       Sys.sleep(1)
-      read_json(tee(glue(baseURL1_swapped)))$data$spdis[[1]]
+      read_json(glue(baseURL1_swapped))$data$spdis[[1]]
     })
     
     #nolint (unused variable)
@@ -133,7 +133,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
     baseURL2_swapped <- "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{alt}:{ref}/rsids"
     
     id <- tryCatch({
-      url <- tee(glue(baseURL2))
+      url <- glue(baseURL2)
       Sys.sleep(1)
       paste0("rs", read_json(url)$data$rsids[[1]])
     },
@@ -141,15 +141,14 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
       warning("There was an error (2):")
       warning(e)
       warning("Trying to swap ref and alt")
-      url <- tee(glue(baseURL2_swapped))
+      url <- glue(baseURL2_swapped)
       Sys.sleep(1)
       id <- read_json(url)$data$rsids[[1]]
       glue("rs{id}")
     })
   },
   error = function(e) {
-    warning("there was an error:")
-    warning(e)
+    warning(paste("there was an error:",e))
     NULL
   }
   )
