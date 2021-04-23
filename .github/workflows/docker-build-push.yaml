@@ -183,6 +183,9 @@ jobs:
     needs: [variables,build_docker]
     runs-on: ubuntu-latest
     steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
       - 
         name: create input file
         run: echo "$file" > file.R
@@ -194,8 +197,10 @@ jobs:
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          options: -v ${{ github.workspace }}:/work
-          run: Rscript /work/file.R
+          options: -v ${{ github.workspace }}:/app
+          run: |
+          cd /app;
+          Rscript file.R
 
   # Run_Vitamin_D_2SMR:
   #   needs: [variables,build_docker]
