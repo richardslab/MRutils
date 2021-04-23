@@ -44,9 +44,10 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         id: conda-build
         with:
-#          python-version: 3.6
+          python-version: 3.6
           activate-environment: MRutils
-          #channels: conda-forge,r,bioconda,defaults,anaconda
+          mamba-version: "*"
+          channels: conda-forge,r,bioconda,defaults,anaconda
           channel-priority: strict
           environment-file: installation/environment_modified.yaml
           use-only-tar-bz2: true
@@ -91,7 +92,7 @@ jobs:
       - 
         name: Run R tests
         run: |
-          conda activate MRutils
+          conda activate MRutils 
           R -e 'devtools::test("MRutils");'
 
   # run-VDMR-conda:
