@@ -179,13 +179,23 @@ jobs:
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
           run: Rscript -e 'library(TwoSampleMR)'
-
+  complete_test_suite:
+    needs: [variables,build_docker]
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: create input file
+        run: echo "$file" > file.R
+        env:
+          file: |
+            devtools::test("MRutils")
       - 
         name: Run R tests in docker image
         uses: yfarjoun/docker-run-action@main
         with:
           image: ${{ needs.variables.outputs.branch_tag }}
-          run: Rscript -e 'devtools::test("MRutils")'
+          options: -v ${{ github.workspace }}:/work
+          run: Rscript /work/file.R
 
   # Run_Vitamin_D_2SMR:
   #   needs: [variables,build_docker]
