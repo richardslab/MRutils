@@ -187,6 +187,9 @@ jobs:
         name: Checkout
         uses: actions/checkout@v2
       - 
+        name: list
+        run: ls -lR
+      -
         name: create input file
         run: echo "$file" > file.R
         env:
