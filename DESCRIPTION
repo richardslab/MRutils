@@ -1,13 +1,29 @@
 Package: MRutils
 Version: 0.0.1.0
 Date: 2021-03-10
-Title: Utility functions for preparing data for 2-sample MR
+Title: Utility functions for preparing data for Two-Sample MR
 Authors@R: c(person("Yossi", "Farjoun", role = c("aut", "cre"),
                      email = "farjoun@gmail.com"))
-Depends: R (>= 3.6.3)
-Depends_backup: R (>= 3.6.3), TwoSampleMR, LDlinkR, dplyr
-Description: This is my first R Package.
-License: GPL (>= 2)
+Depends: R (>= 3.6)
+Depends_backup: R (>= 3.6)
+Description: Utility functions for preparing data for Two-Sample Mendelian Randomization using the TwoSampleMR package.
+License: MIT + file LICENSE
+Encoding: UTF-8
 Suggests: 
+    spelling,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+RoxygenNote: 7.1.1
+Language: en-US
+Imports: 
+    TwoSampleMR,
+    LDlinkR,
+    magrittr,
+    dplyr,
+    glue,
+    jsonlite,
+    mgsub,
+    plyr,
+    purrr,
+    reshape2,
+    xfun
