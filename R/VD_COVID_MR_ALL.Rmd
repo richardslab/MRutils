@@ -1,0 +1,335 @@
+---
+title: Vitamin D - COVID-19 MR (redo)
+output: pdf_document
+params:
+  outcome_gwas: COVID-A2
+  exposure_name: Vitamin D
+  prefix: VD_A2
+  pop: !r c("CEU", "TSI", "GBR", "IBS")
+  LDLink_token: !r tryCatch(glue::trim(readChar("../LD_LINK_TOKEN", 20)), warning=function(cond) { message("The file LD_LINK_TOKEN should contain an access token to the NCI API. if you don't have a token go here:\n https://ldlink.nci.nih.gov/?tab=apiaccess"); return(""); })
+  near_half_threshold: 0.08
+  exposure_gwas_file: ../raw_data/1-s2.0-S0002929720300173-mmc2.xlsx
+  exposure_pvalue_threshold: !r as.numeric("5e-5") 
+  MAF_rare_threshold: 0.01
+  prune_r2_threshold: 0.05
+  skip_LD_api: !r TRUE
+  outcome_file: ../raw_data/COVID19_HGI_A2_ALL_leave_23andme_20201020.b37.txt.gz
+  results_dir: ../derived_data
+  use_cache: TRUE
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(cache = params$use_cache)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(error = TRUE)
+knitr::opts_chunk$set(comment = "")
+
+```
+
+```{r libraries and setup}
+library(tidyr)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(glue)
+library(magrittr)
+library(ggplot2)
+library(validate)
+
+source("utils.R")
+
+for (i in names(params)) { 
+  if (i != "LDLink_token") 
+    print(glue("{i} = {params[i]}")) 
+  else 
+    print(glue("{i} = [redacted]"))
+}
+
+```
+
+
+## Extract data from VitaminD GWAS
+Since the input data is given to us as an excel spreadsheet, we have to extract the information from it
+"manually". In order to avoid copy-paste errors, we extract the information using the readxl library. 
+
+```{r extract excelsheet data, verbose=TRUE}
+data = read_excel(params$exposure_gwas_file, 
+                  sheet = "Table S2", 
+                  skip = 4, 
+                  .name_repair = "minimal") %>% 
+  subset(select = c(1:5, 13:17))
+```
+
+```{r debug1,verbose=TRUE}
+first_blank = min(which(is.na(data$RSID)))
+# use the first blank line as an indication of the end of the data, since the dictionary comes after
+if (length(first_blank) == 1) {
+  data = data[1:min(first_blank - 1, nrow(data)),]
+}
+```
+
+```{r debug2,verbose=TRUE}
+names(data)[8] = "beta"
+names(data)[1] = "rsid"
+data %<>% 
+  mutate_at(.vars = c("EAF", "beta", "SE", "P"), as.numeric) %>% 
+  mutate(POS = BP, CHR = gsub("^chr", "", CHR), BP = NULL)
+```
+
+
+Make sure that the exposure data validates as a gwas
+```{r Validate exposure data}
+summary(confront(data, gwas_rules))
+```
+
+```{r debug4,verbose=TRUE}
+significant_snps <- filter_and_write_exposure_data(data, 
+                                                   location_prefix = glue("{params$results_dir}/{params$prefix}_"), 
+                                                   params$exposure_pvalue_threshold, 
+                                                   params$MAF_rare_threshold)
+```
+Read `r nrow(data)` entries from `r params$exposure_gwas_file`
+
+### Outcome  
+
+## extract relevant SNPs
+```{r extract Snps}
+
+map_outcome_data <- function(x) {
+  
+  mutate(x, 
+         beta = all_inv_var_meta_beta, 
+         P = all_inv_var_meta_p, 
+         EA = ALT, 
+         NEA = REF, 
+         EAF = all_meta_AF, 
+         SE = all_inv_var_meta_sebeta) %>% 
+      subset(select = required_headers)
+}
+ 
+  outcome_data <- extract_snps_from_bgzip(outcome = params$outcome_file, snps = significant_snps) %>% map_outcome_data()
+  
+  print(glue("There are {nrow(outcome_data)} SNPs in the outcome file {params$outcome_file}"))
+```
+
+
+Make sure that the outcome data validates as a gwas
+```{r Validate outcome data}
+summary(confront(outcome_data, gwas_rules))
+```
+```{r put output file name into variable}
+rsIdsFromDBSNP = glue("{params$results_dir}/{params$prefix}_rsIdsFromdbSnp.txt")
+
+```
+## find names for un-named snps
+```{r find_unnamed_snps, cache=params$use_cache, full.names = TRUE))}
+## this can take time and hits the API multiple times....
+print(glue("There are {nrow(outcome_data %>% subset(is.na(rsid)))} SNPs in the outcome data that are missing their rsid: "))
+print(outcome_data %>% subset(is.na(rsid), select = c(CHR, POS, EA, NEA)))
+
+withIds <- get_unknown_rsids_from_locus(outcome_data)
+print(glue("{nrow(withIds)} SNPs rsids were found:"))
+print(glue("{withIds$rsid}"))
+
+write.table(withIds, rsIdsFromDBSNP, quote = F, sep = '\t', row.names = F)
+```
+
+```{r post-cache read variable}
+withIds <- read.table(rsIdsFromDBSNP, sep = '\t', header = T)
+
+```
+
+## merge into other data
+```{r merge found snps into data}
+outcome_with_rsids <- merge_rsids_into_gwas(outcome_data, withIds)
+  
+print(glue("After merging the results, there are {nrow(outcome_with_rsids%>%subset(is.na(rsid)))} variants lacking rsid, and {nrow(outcome_with_rsids)} variants overall."))
+```
+
+```{r merge exposure and outcome}
+merged_exp_and_out <- merge(significant_snps, suffixes = c(".exp", ".out"),
+                          outcome_with_rsids, 
+                          by = c("rsid", "CHR", "POS"), 
+                          all.x = T,
+                          )
+
+print(glue("After merging Exposure and Outcome, there are {nrow(merged_exp_and_out%>%subset(is.na(beta.out)))} variants lacking 'beta.out', and {nrow(merged_exp_and_out)} variants overall."))
+```
+
+```{r get proxies, cache=params$use_cache}
+
+##takes time (hits the LDLink API)
+proxies_raw <- get_proxies(subset(merged_exp_and_out, is.na(beta.out))$rsid, 
+                           params$LDLink_token, 
+                           population = params$pop, 
+                           results_dir = params$results_dir, 
+                           skip_api = params$skip_LD_api)
+
+print(glue("Found {nrow(proxies_raw)} proxies for {length( unique(proxies_raw$query_rsid))} variants, out of {length(which(is.na(merged_exp_and_out$EAF.out)))} requested"))
+```
+
+Subset to proxies that are in the outcome first, since we need to find out which proxies are present in the outcome.
+```{r use proxies}
+proxies_in_outcome <- extract_snps_from_bgzip(params$outcome_file, snps = proxies_raw) %>% map_outcome_data()
+
+print(glue("need to look for rsid for {nrow(subset(proxies_in_outcome, is.na(rsid)))} "))
+
+rsIdsFromDBSNP_proxies = glue("{params$results_dir}/{params$prefix}_proxy_rsIdsFromdbSnp.txt")
+```
+
+
+```{r find proxies_missing_rsids, cache=params$use_cache}
+proxies_in_outcome_with_missing_ids <- get_unknown_rsids_from_locus(proxies_in_outcome)
+
+write.table(x = proxies_in_outcome_with_missing_ids, file = rsIdsFromDBSNP_proxies, quote = F, sep = '\t', row.names = F)
+  
+```
+
+```{r merge with rest of outcome}
+proxies_in_outcome_with_missing_ids <- read.table(file = rsIdsFromDBSNP_proxies,  sep = '\t')
+
+proxies_in_outcome_with_rsids <- merge_rsids_into_gwas(proxies_in_outcome, proxies_in_outcome_with_missing_ids)
+
+proxies <- proxies_raw %>% subset(rsid %in% proxies_in_outcome_with_rsids$rsid)
+
+```
+found rsids for `r nrow(proxies_in_outcome_with_missing_ids)` SNPs
+
+
+There are `r nrow(proxies)` proxies 
+(of `r nrow(proxies_raw)`) in the outcome.
+
+Merge proxies with exposure...
+```{r merge proxies and exposure}
+exposure_and_proxies <- merge(proxies, significant_snps, by.x = c("query_rsid","CHR"), by.y = c("rsid","CHR"), suffixes = c(".proxy",".exp"))
+```
+... `r nrow(exposure_and_proxies)` proxies were successfully merged with the exposure.
+
+Remove chimeric snps and then the smallest P
+```{r, remove chimeric SNPs}
+proxies_with_exposure <- exposure_and_proxies %>% 
+  mutate(maf_near_half = abs(EAF.exp - 0.5) <= params$near_half_threshold, 
+         distance_to_query = abs(POS.exp - POS.proxy)) %>%
+  subset( !(Alleles %in% chimeric & maf_near_half)) %>%
+  group_by(query_rsid) %>%
+  slice_max(order_by = R2, n = 1, with_ties = TRUE) %>%
+  slice_min(order_by = distance_to_query, n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  mutate(maf_near_half = NULL, 
+         distance_to_query = NULL) 
+```
+After removing ambiguous snps and choosing the most linked SNP for every query, `r nrow(proxies_with_exposure)` proxies remain.
+
+```{r Check alleles, eval=FALSE}
+with(proxies_with_exposure, Alleles == glue("({EA}/{NEA})") | Alleles == glue("({NEA}/{EA})"))
+subset(proxies_with_exposure, select = c(Alleles, Correlated_Alleles, rsid, EA, NEA))
+```
+
+
+```{r fix-proxy-alleles}
+
+fixed_proxies_with_exposure <- adply(proxies_with_exposure, 1, function(x) {
+  replace_alleles(list(x$EA, x$NEA), x$Correlated_Alleles) %>%
+    {
+  data.frame(
+    EA = .[1],
+    NEA = .[2]
+    )}
+  })
+
+if (!all(with(fixed_proxies_with_exposure, Alleles == glue("({EA}/{NEA})") | Alleles == glue("({NEA}/{EA})")))) {
+  warn("there was a problem fixing the alleles")
+}
+
+```
+
+```{r merge proxy rows with outcome and combine with rest}
+
+merged_with_proxies <- merge(proxies_in_outcome_with_rsids,
+                             fixed_proxies_with_exposure,
+                             suffixes = c(".out",".exp"),
+                             by.x = c("rsid", "CHR"),
+                             by.y = c("rsid", "CHR")) %>%
+  select(c(-POS.proxy, -POS.exp, -R2, -Correlated_Alleles, -Alleles, -Locus,))
+
+merged_and_combined <- rbind(merged_with_proxies, mutate(merged_exp_and_out, query_rsid = NA), stringsAsFactors = FALSE) %>% subset(!is.na(EAF.out))
+```
+
+Total number of SNPs for use in 2-Sample MR (prior to pruning): `r nrow(merged_and_combined)`
+
+Now we need to make sure that we do not have SNPs in high LD next to each other.
+Pruning using populations: [`r glue_collapse(glue("{params$pop}"),sep=", ")`]
+```{r prune_snps, cache = TRUE}
+
+ld_pairs_raw <- get_LD_pairs(merged_and_combined, population = params$pop, token = params$LDLink_token)
+
+unique_rsids <- with(ld_pairs_raw, unique(c(as.character(RS_number), as.character(variable))))
+ld_pairs <- ld_pairs_raw %>% mutate(
+  variable = factor(variable, levels = unique_rsids),
+  RS_number = factor(RS_number, levels = unique_rsids))
+
+p = ggplot(ld_pairs) +  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable))
+    
+show(p + aes(fill = value) + labs(fill = expression(R^2), parse = TRUE))
+show(p + aes(fill = value > params$prune_r2_threshold) + labs(fill = expression(R^2 > threshold), parse = TRUE))
+
+
+```
+
+```{r }
+list_result <- prune_snps(merged_and_combined, ld_pairs, params$prune_r2_threshold)
+
+
+pruned_combined_snps <- list_result$rsids
+removed_rsids <- list_result$removed_rsid
+
+ggplot(ld_pairs) +  
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable)) +
+  aes(fill = value > params$prune_r2_threshold, alpha = RS_number %in% removed_rsids | variable %in% removed_rsids) + 
+  labs(fill = expression(R^2>threshold), alpha = "variant removed", parse = TRUE) + 
+  scale_alpha_manual(values = c(0.3, 1), breaks = c(TRUE, FALSE))
+ 
+
+write.table(pruned_combined_snps, file = glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"), sep = '\t', quote = F, row.names = F)
+```
+Removed `r length(removed_rsids)` snps due to high LD: `r glue_collapse(glue("{removed_rsids} "))`
+Total number of SNPs for use in 2-Sample MR (pruned): `r nrow(pruned_combined_snps)`
+
+```{r get MR results}
+results <- get_2smr_results(glue("{params$results_dir}/{params$prefix}_SNPsFor2SMR.txt"))
+```
+
+```{r show results}
+
+for (p in results) {
+  show(p)
+}
+save(results, file = glue("{params$results_dir}/{params$prefix}_2SMR_results.RData"))
+
+```
+
+```{r compare with Guillaumes results, eval=FALSE} 
+rsids=c("rs6698680", "rs3750296", "rs7519574", "rs56044892", "rs2934744", "rs7528419", "rs3768013", "rs115045402", "rs144613541", "rs61816761", "rs11264360", "rs867772", "rs12997242", "rs11127048", "rs6724965", "rs7569755", "rs1047891", "rs2011425", "rs1972994", "rs6438900", "rs6773343", "rs78649910", "rs7699711", "rs11723621", "rs58073039", "rs28364331", "rs1229984", "rs7718395", "rs3822868", "rs111529171", "rs1011468", "rs1858889", "rs804280", "rs34726834", "rs7828742", "rs10818769", "rs532436 (proxy: rs635634)", "rs10887718", "rs10832218", "rs577185477", "rs10832289", "rs188480917 (proxy: rs576128895) ", "rs117576073", "rs523583", "rs12803256", "rs200454003 (proxy: rs4245442)", "rs10793129", "rs1149605", "rs964184", "rs2847500", "rs12317268", "rs9668081", "rs10859995", "rs8018720", "rs261291", "rs1800588", "rs17765311", "rs62007299", "rs8063706", "rs77924615", "rs1800775", "rs2909218", "rs8091117", "rs2037511", "rs57631352", "rs73015021", "rs10500209", "rs58542926", "rs3814995", "rs1065853", "rs157595", "rs112285002 (proxy: rs296386)", "rs10426", "rs8103262", "rs6123359", "rs6127099", "rs2585442", "rs2762942", "rs2229742", "rs2074735", "rs960596")%>%gsub(pattern = " .*",replacement = "")
+
+###investigate differences:
+
+setdiff(pruned_combined_snps$rsid,rsids)
+setdiff(rsids, pruned_combined_snps$rsid)
+
+rsids_differences=rbind(data.frame(rsid=setdiff(pruned_combined_snps$rsid,rsids), set="Y"),
+                        data.frame(rsid=setdiff(rsids,pruned_combined_snps$rsid), set="G"))
+
+subset(proxies, rsid %in% rsids_differences$rsid)
+
+
+ld_pairs_raw <- get_LD_pairs(rsids_differences$rsid, population = params$pop, token = params$LDLink_token)
+
+
+subset(pairs, RS_number %in% setdiff(pruned_combined_snps$rsid,rsids) || RS_number %in% setdiff(rsids,pruned_combined_snps$rsid))
+
+```
+
+
+
