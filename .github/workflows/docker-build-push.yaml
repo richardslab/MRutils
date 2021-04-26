@@ -186,16 +186,19 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v2
-      - 
-        name: list
-        run: ls -lR
       -
         name: create input file
         run: echo "$file" > file.R
         env:
           file: |
-            devtools::test("MRutils")
+            devtools::test(".")
       - 
+        name: list
+        run: ls -lR ${{ github.workspace }}
+      - 
+        name: cat
+        run: cat file.R
+      -
         name: Run R tests in docker image
         uses: yfarjoun/docker-run-action@main
         with:
