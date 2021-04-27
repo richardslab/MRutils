@@ -6,9 +6,9 @@
 #'
 #' @param chrom The name of the contig for the SNP
 #' @param pos The (1-based) position of the SNP 
-#' @param ref The reference allele
-#' @param alt The alternate allele
-#' @param assembly Which reference genome to use ("hg19" or "hg38")
+#' @param ref The reference allele (only SNPs are supported)
+#' @param alt The alternate allele (only SNPs are supported)
+#' @param assembly Which reference genome to use ("hg18", "hg19", or "hg38")
 #'
 #' @return an rsid identifier of the position provided
 #' @export
@@ -20,7 +20,14 @@
 #' 
 #' 
 get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
-  retVal=tryCatch({
+  assertthat::assert_that(assembly %in% valid_references)
+  assertthat::assert_that(chrom %in% valid_contigs)
+  assertthat::assert_that(ref %in% valid_alleles)
+  assertthat::assert_that(alt %in% valid_alleles)
+  assertthat::assert_that(pos > 0)
+  
+  
+  retVal <- tryCatch({
     baseURL1 <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{ref}/{alt}/contextuals?assembly={assembly}"
     baseURL1_swapped <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
     
@@ -69,13 +76,15 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
 }
 
 
-get_unknown_rsids_from_locus <- function(gwas, build = "hg19") {
-  
+get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
+  validate::confront(gwas, gwas_rules)
+  assertthat::assert_that(assembly %in% valid_references)
+
   rsid <- CHR <- POS <- NEA <- EA <- NULL
   
   unknown_ids <- subset( x = gwas, 
                          subset = is.na(rsid), 
-                         select = c(CHR, POS, NEA, EA)) %>% transform(build = build)
+                         select = c(CHR, POS, NEA, EA)) %>% transform(assembly = assembly)
   
   ## this can take time and hits the API multiple times....
   withIds <- plyr::adply(unknown_ids, 1, function(x) {
@@ -83,7 +92,7 @@ get_unknown_rsids_from_locus <- function(gwas, build = "hg19") {
                                     pos = x$POS, 
                                     ref = x$NEA, 
                                     alt = x$EA, 
-                                    assembly = x$build))
+                                    assembly = x$assembly))
   }
   )
   withIds
@@ -91,6 +100,7 @@ get_unknown_rsids_from_locus <- function(gwas, build = "hg19") {
 
 
 merge_rsids_into_gwas <- function(gwas, rsids) {
+  validate::confront(gwas, gwas_rules)
   
   rsid <- CHR <- POS <- rsid.x <- rsid.y <- NULL
   

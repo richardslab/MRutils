@@ -7,7 +7,7 @@ extract_snps_from_bgzip <-
     #nolint (unused variable)
     region <- snps %>%
       plyr::alply(1, function(x) with(x, glue("{CHR}:{POS}-{POS}"))) %>% { 
-        do.call(paste, plyr::.) 
+        do.call(paste, .) 
       }
     
     temp_output <- tempfile(pattern = "subsetted_exposure__",
