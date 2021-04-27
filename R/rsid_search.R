@@ -26,7 +26,6 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
   assertthat::assert_that(alt %in% valid_alleles)
   assertthat::assert_that(pos > 0)
   
-  
   retVal <- tryCatch({
     baseURL1 <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{ref}/{alt}/contextuals?assembly={assembly}"
     baseURL1_swapped <- "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
@@ -77,7 +76,7 @@ get_rsid_from_position <- function(chrom, pos, ref, alt, assembly = "hg19") {
 
 
 get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
-  validate::confront(gwas, gwas_rules)
+  assert_gwas(gwas)
   assertthat::assert_that(assembly %in% valid_references)
 
   rsid <- CHR <- POS <- NEA <- EA <- NULL
@@ -100,8 +99,9 @@ get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
 
 
 merge_rsids_into_gwas <- function(gwas, rsids) {
-  validate::confront(gwas, gwas_rules)
-  
+  assert_gwas(gwas)
+  assert_rsid(rsids)
+
   rsid <- CHR <- POS <- rsid.x <- rsid.y <- NULL
   
   gwas_with_ids <- plyr::mutate(gwas, rsid = as.character(rsid)) %>%
