@@ -48,7 +48,7 @@ assert_gwas <- function(data) {
 #' }
 #' 
 assert_rsids <- function(strings) {
-  assertthat::assert_that(typeof(data$rsid) == "character")
+  assertthat::assert_that(typeof(strings) == "character")
   assertthat::assert_that(all(grepl("^rs[0-9]*", strings)))
 }
 
