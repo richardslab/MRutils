@@ -3,7 +3,7 @@
 #' Method to filter and save exposure data
 #'
 #' @param data a dataframe with possibly snps that we want. Expected columns are P (p-value) and EAF (effect allele frequency)
-#' but data is expected to validate according to \code{\link{validate_gwas}}
+#' but data is expected to validate according to \code{\link{assert_gwas}}
 #' @param location_prefix a prefix pointing to where to save the filtered data
 #' @param pvalue_threshold a p-value threshold for filtering the data (will look at the `P` column) 
 #' @param rare_threshold a threshold on the allele frequency to avoid rare variants (will look at the `EAF` column and 1-EAF)
@@ -49,10 +49,10 @@ find_duplicate_snps <- function(gwas) {
 }
 
 
-#' Run Two-Sample MR on preprocessed data. 
+#' Run Two-Sample MR on pre-processed data. 
 #'
 #' @param preprocessed_snps a dataframe containing a collection of snps that have been prepared for use with two-sample MR. 
-#' the exected columns are: 
+#' the expected columns are: 
 #' rsid -- the name of the SNP
 #' beta.exp -- the exposure beta
 #' SE.exp -- the exposure standard error

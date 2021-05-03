@@ -9,11 +9,13 @@ Depends_backup: R (>= 3.6)
 Description: Utility functions for preparing data for Two-Sample Mendelian Randomization using the TwoSampleMR package.
 License: MIT + file LICENSE
 Encoding: UTF-8
+LazyData: true
 Suggests: 
     spelling,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 RoxygenNote: 7.1.1
+SystemRequirements: Needs tabix installed.
 Language: en-US
 Imports: 
     TwoSampleMR,
@@ -26,4 +28,7 @@ Imports:
     plyr,
     purrr,
     reshape2,
-    xfun
+    xfun,
+    validate,
+    assertthat,
+    methods
