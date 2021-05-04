@@ -62,7 +62,7 @@ valid_references <- c("hg18", "hg19", "hg38")
 #'  }
 #'
 #'
-assert_gwas <- function(data) {
+assert_gwas <- function(data, show_error=TRUE) {
   rsid <- CHR <- POS <- SE <- beta <- EAF <- NEA <- EA <- P <- NULL
   
   . <- field_format <- in_range <- NULL
@@ -71,7 +71,7 @@ assert_gwas <- function(data) {
     validate::validator(
       rsid_starts_rs = is.na(rsid) | field_format(rsid, "rs*"),
       rsid_has_numbers = is.na(rsid) |
-        field_format(rsid, "rs[0-9]*", type = "regex"),
+        field_format(rsid, "^rs[0-9]*$", type = "regex"),
       chr_is_valid = CHR %in% valid_contigs |
         all(CHR %in% valid_contigs_with_chr),
       chr_is_valid_with_chr = CHR %in% valid_contigs_with_chr |
@@ -96,11 +96,15 @@ assert_gwas <- function(data) {
   val_sum <-
     validate::summary(validate::confront(as.data.frame(data), gwas_rules))
   if (any(val_sum$error) || any(val_sum$fails > 0)) {
-  #  methods::show(val_sum)
-  #  methods::show(validate::violating(as.data.frame(data), gwas_rules[1:10]))
+    if(show_error) {
+      methods::show(val_sum)
+      methods::show(validate::violating(as.data.frame(data), gwas_rules[1:10]))
+    }
     assertthat::assert_that(!any(val_sum$error))
     assertthat::assert_that(!any(val_sum$fails))
   }
+  
+  invisible(TRUE)
 }
 
 

@@ -72,3 +72,8 @@ extract_snps_from_bgzip <-
     assert_gwas(outcome_data)
     outcome_data
   }
+
+
+tabix <- function(){
+  CMD=system(c("which tabix"),intern = T,)
+}

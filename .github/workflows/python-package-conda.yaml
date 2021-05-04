@@ -47,7 +47,7 @@ jobs:
           python-version: 3.6
           activate-environment: MRutils
           mamba-version: "*"
-          channels: conda-forge,r,bioconda,defaults,anaconda
+          channels: conda-forge,defaults
           channel-priority: strict
           environment-file: installation/environment_modified.yaml
           use-only-tar-bz2: true

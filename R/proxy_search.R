@@ -49,6 +49,7 @@ get_LD_pairs <- function(rsids_and_chr, population, token) {
   })
 }
 
+
 prune_snps <- function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
   
   RS_number <- rsid <- value <- variable <- NULL

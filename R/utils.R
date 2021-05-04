@@ -73,7 +73,7 @@ find_duplicate_snps <- function(gwas) {
 
 get_2smr_results <- function(preprocessed_snps){
   
-  
+   
   exposure <- TwoSampleMR::read_exposure_data(preprocessed_snps, 
                                  sep = '\t', 
                                  snp_col = "rsid",
