@@ -17,4 +17,5 @@ There are three options:
 ```bash
 docker run --rm -it -v $(pwd):/work richardslab/mr_utils:latest Rscript /work/relative/path/to/r/file -arg1 value1 -arg2 value2
 ```
-...
+
+This is work in progress. please visit often.
