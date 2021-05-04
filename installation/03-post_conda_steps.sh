@@ -4,7 +4,6 @@
 BASEDIR="$(dirname "$0")"
 
 
-
 echo BASEDIR=$BASEDIR
 echo RUNNING post-conda steps
 
@@ -14,10 +13,12 @@ set +e \
   && . "$(conda info --base)"/etc/profile.d/conda.sh \
   && conda activate base 
 
-pushd ${BASEDIR}/../../MRutils
+set -e
+
+pushd ${BASEDIR}/../../MRutils 
 PROJECT=`pwd`
 echo PROJECT=$PROJECT
-popd
+popd 
 
 
 conda activate MRutils
