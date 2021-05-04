@@ -14,7 +14,7 @@ conda deactivate || echo "No active environment"
 conda env remove -n ${ENV} || echo "Couldn't remove environment ${ENV}"
 conda create -y -n ${ENV}  || echo "It seem that environment ${ENV} is already present"
 
-set -e
+set -ex
 
 mamba env update -n ${ENV} -q \
 	--file "$BASEDIR"/environment_modified.yaml 

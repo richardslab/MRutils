@@ -15,10 +15,10 @@ set +e \
 
 set -e
 
-pushd ${BASEDIR}/../../MRutils 
+pushd ${BASEDIR}/../../MRutils || exit 1
 PROJECT=`pwd`
 echo PROJECT=$PROJECT
-popd 
+popd || exit 1
 
 
 conda activate MRutils
