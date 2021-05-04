@@ -50,6 +50,7 @@ valid_references <- c("hg18", "hg19", "hg38")
 #' Validate that a dataframe contains values that are consistent with being a gwas.
 #'
 #' @param data input data, a dataframe
+#' @param show_error if gwas does _not_ validate, whether to show the reasons
 #' @export
 #' @examples
 #'
@@ -58,7 +59,7 @@ valid_references <- c("hg18", "hg19", "hg38")
 #'  \dontrun{
 #'     broken_data <- demo_data # make copy
 #'     broken_data$POS[1] <- 0 # Zero is not a valid value for POS
-#'     assert_gwas(broken_data) # NOT OK. Will error.
+#'     assert_gwas(broken_data, show_error=TRUE) # NOT OK. Will error.
 #'  }
 #'
 #'
