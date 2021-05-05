@@ -6,34 +6,33 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      RENV_PATHS_ROOT: ~/.local/share/renv
+
     steps:
       - uses: actions/checkout@v2
       - run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
       - uses: r-lib/actions/setup-r@v1
         with:
-          r-version: '3.6.3' 
+          r-version: '4.0.3' 
 
-      - name: Query dependencies
-        run: |
-          install.packages('remotes')
-          install.packages('devtools')
-          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
-          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
-        shell: Rscript {0}
-
-      - name: Restore R package cache
-        uses: actions/cache@v2
+      - name: Cache packages
+        uses: actions/cache@v1
         with:
-          path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
-
-      - name: Install dependencies
-        run: |
-          install.packages(c("remotes"))
-          remotes::install_deps(dependencies = TRUE)
-          devtools::install_github("jimhester/lintr", quiet = TRUE)
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+      
+      - name: Restore packages
         shell: Rscript {0}
+        run: |
+          if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+            renv::restore()
+
+      - name: install lintr
+        shell: Rscript {0}
+        run: |
+          renv::install(jimhester/lintr", quiet = TRUE) 
 
       - name: Install package
         run: R CMD INSTALL .
