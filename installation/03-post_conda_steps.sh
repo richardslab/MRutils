@@ -15,7 +15,7 @@ set +e \
 
 set -e
 
-pushd "${BASEDIR}/../../MRutils" || exit 1
+pushd "${BASEDIR}/../" || exit 1
 PROJECT="$(pwd)"
 echo PROJECT="$PROJECT"
 popd || exit 1
