@@ -19,7 +19,7 @@ fi
 if [ "$machine" = "Linux" ]; then
 	set -xe
 	curl -LO http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-	bash ./Miniconda3-latest-Linux-x86_64.sh -b -f -p ${HOME}/miniconda 
+	bash ./Miniconda3-latest-Linux-x86_64.sh -b -f -p "${HOME}/miniconda"
 	rm Miniconda3-latest-Linux-x86_64.sh
 	PATH="${HOME}/miniconda/bin:${PATH}"
 	conda init
