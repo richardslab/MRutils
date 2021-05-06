@@ -76,6 +76,17 @@ jobs:
             ${{ runner.os }}-renv-
 
       - 
+        name: activate MRutils environment
+        run: conda activate MRutils
+      -
+        name: Conda info
+        run: |
+          conda info --envs
+          conda list -n MRutils
+          conda config --show-sources
+          conda config --show
+          printenv | sort
+      -
         name: Restore packages
         shell: Rscript {0}
         run: |
@@ -94,30 +105,19 @@ jobs:
           path: ${{ steps.build-packages.outputs.package_file }}"
           if-no-files-found: error
           retention-days: 60
-      -
-        name: Conda info
-        run: |
-          conda info --envs
-          conda list -n MRutils
-          conda config --show-sources
-          conda config --show
-          printenv | sort
       - 
         name: Test R libraries (Two Sample MR and LD-LinkR)
         run: |
-          conda activate MRutils
           R -e 'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: Test dplyr
-        run: >
-          conda run -n MRutils Rscript -e 
-          'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
+        shell: Rscript {0}
+        run: library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);
       - 
         name: Run R tests
         run: |
           ls
-          pwd
-          conda activate MRutils 
+          pwd 
           R -e 'devtools::test();'
 
   # run-VDMR-conda:
