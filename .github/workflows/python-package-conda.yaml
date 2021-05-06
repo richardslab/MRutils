@@ -17,6 +17,10 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
+    env:
+      RENV_PATHS_ROOT: ~/.local/share/renv
+
     steps:
       - 
         uses: actions/checkout@v2
@@ -62,15 +66,34 @@ jobs:
           path: MRutils_${{ matrix.os }}.yaml
           if-no-files-found: error
           retention-days: 60
-      -
-        name: test curl
+      
+      - name: Cache R packages
+        uses: actions/cache@v1
+        with:
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - 
+        name: Restore packages
+        shell: Rscript {0}
         run: |
-          conda activate MRutils
-          R -e 'library(curl);'
-      -
-        name: post conda steps
-        run: |
-          GITHUB_PAT=${{ secrets.PAT_GITHUB }} installation/03-post_conda_steps.sh 
+          if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+          renv::restore()
+      - 
+        name: build-packages
+        shell: Rscript {0}
+        run: file=devtools::build(); cat(glue::glue("::set-output name=package_file::{file}"))
+
+      - 
+        name: create package artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: package-${{ matrix.os }}
+          path: ${{ steps.build-packages.outputs.package_file }}"
+          if-no-files-found: error
+          retention-days: 60
       -
         name: Conda info
         run: |
