@@ -88,14 +88,19 @@ jobs:
           printenv | sort
       -
         name: Find installed R packags
-        shell: Rscript {0}
-        run: installed.packages()
+        run: |
+        conda activate MRutils
+        Rscript -e 'installed.packages\(\)'
       -
         name: Restore packages
-        shell: Rscript {0}
+        env: 
+          command: |
+            if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+            renv::restore()
         run: |
-          if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
-          renv::restore()
+          conda activate MRutils
+          Rscript -e '${{ env.command }}'
+
       - name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
@@ -104,9 +109,11 @@ jobs:
           limit-access-to-actor: true
       - 
         name: build-packages
-        shell: Rscript {0}
-        run: file=devtools::build(); cat(glue::glue("::set-output name=package_file::{file}"))
-
+        env: 
+          command: file=devtools::build(); cat(glue::glue("::set-output name=package_file::{file}"))
+        run: |
+          conda activate MRutils
+          Rscript -e '${{ env.command }}'
       - 
         name: create package artifact
         uses: actions/upload-artifact@v2
