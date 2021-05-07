@@ -88,9 +88,8 @@ jobs:
           printenv | sort
       -
         name: Find installed R packags
-        shell: bash -l conda run -n MRutils {0}
         run: |
-          Rscript -e 'installed.packages\(\)'
+          conda run -n MRutils Rscript -e 'installed.packages\(\)'
       -
         name: Restore packages
         env: 
@@ -110,11 +109,8 @@ jobs:
         name: build-packages
         env: 
           command: file=devtools::build(); cat(glue::glue("::set-output name=package_file::{file}"))
-        shell: bash -l conda run -n MRutils {0}
         run: |
-          Rscript -e 'installed.packages\(\)'
-          conda run -n MRutils
-          Rscript -e '${{ env.command }}'
+          conda run -n MRutils Rscript -e '${{ env.command }}'
       - 
         name: create package artifact
         uses: actions/upload-artifact@v2
@@ -126,7 +122,7 @@ jobs:
       - 
         name: Test R libraries (Two Sample MR and LD-LinkR)
         run: |
-          R -e 'library(TwoSampleMR); library(LDlinkR);'
+          conda run -n MRutils R -e 'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: Test dplyr
         shell: Rscript {0}
