@@ -96,6 +96,13 @@ jobs:
         run: |
           if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
           renv::restore()
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
+        with:
+          sudo: false
+          limit-access-to-actor: true
       - 
         name: build-packages
         shell: Rscript {0}
