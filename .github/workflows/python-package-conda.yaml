@@ -88,8 +88,9 @@ jobs:
           printenv | sort
       -
         name: Find installed R packags
+        shell: bash -l conda run -n MRutils {0}
         run: |
-          conda run -n MRutils Rscript -e 'installed.packages\(\)'
+          Rscript -e 'installed.packages\(\)'
       -
         name: Restore packages
         env: 
@@ -109,8 +110,10 @@ jobs:
         name: build-packages
         env: 
           command: file=devtools::build(); cat(glue::glue("::set-output name=package_file::{file}"))
+        shell: bash -l conda run -n MRutils {0}
         run: |
-          conda activate MRutils
+          Rscript -e 'installed.packages\(\)'
+          conda run -n MRutils
           Rscript -e '${{ env.command }}'
       - 
         name: create package artifact
