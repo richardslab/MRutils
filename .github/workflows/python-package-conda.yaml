@@ -87,6 +87,10 @@ jobs:
           conda config --show
           printenv | sort
       -
+        name: Find installed R packags
+        shell: Rscript {0}
+        run: installed.packages()
+      -
         name: Restore packages
         shell: Rscript {0}
         run: |
