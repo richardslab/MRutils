@@ -101,7 +101,6 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
         with:
-          sudo: false
           limit-access-to-actor: true
       - 
         name: build-packages
