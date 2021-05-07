@@ -110,7 +110,8 @@ jobs:
         with:
           limit-access-to-actor: true
       - 
-        name: build-packages
+        name: build packages
+        id: packages
         env: 
           command: |
             if (!requireNamespace("devtools", quietly = TRUE)){ 
@@ -121,7 +122,7 @@ jobs:
              
             file <- devtools::build()
             cat("package built! Output is", file, "\n")  
-            cat(glue::glue("::set-output name=package_file::{file}"))
+            cat(glue::glue("\n::set-output name=file::{file}\n"))
 
         run: |
           conda run -n MRutils Rscript -e '${{ env.command }}'
@@ -130,7 +131,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: package-${{ matrix.os }}
-          path: ${{ steps.build-packages.outputs.package_file }}"
+          path: ${{ steps.packages.outputs.file }}"
           if-no-files-found: error
           retention-days: 60
       - 
