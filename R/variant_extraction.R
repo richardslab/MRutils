@@ -42,10 +42,11 @@
 extract_snps_from_bgzip <-
   function(outcome,
            snps,
+           mapping_function = identity,
            comment_char = "",
-           mapping_function = identity) {
+           validate = TRUE) {
     . <- NULL
-    #nolint (unused variable)
+    
     region <- snps %>%
       plyr::alply(1, function(x)
         with(x, glue::glue("{CHR}:{POS}-{POS}"))) %>% {
@@ -59,11 +60,13 @@ extract_snps_from_bgzip <-
       comment.char = comment_char,
     ) %>% names()
     
+    cat("column names", col_names)
+    
     temp_output <- tempfile(pattern = "subsetted_exposure__",
                             tmpdir = tempdir(),
                             fileext = ".txt")
     
-    cmd <- glue::glue("tabix -f {outcome} {region} > {temp_output}")
+    cmd <- glue::glue("tabix -f '{outcome}' {region} > {temp_output}")
     system(cmd)
     outcome_data <-
       utils::read.table(temp_output, col.names = col_names) %>%
@@ -73,7 +76,3 @@ extract_snps_from_bgzip <-
     outcome_data
   }
 
-
-tabix <- function(){
-  CMD=system(c("which tabix"),intern = T,)
-}

@@ -3,7 +3,6 @@
 export("%>%")
 export("%vin%")
 export(assert_gwas)
-export(assert_probability)
 export(assert_rsids)
 export(extract_snps_from_bgzip)
 export(filter_and_write_exposure_data)

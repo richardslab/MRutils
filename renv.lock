@@ -344,6 +344,13 @@
       "Repository": "CRAN",
       "Hash": "c5e68405893f030f139f6d6675eac675"
     },
+    "curry": {
+      "Package": "curry",
+      "Version": "0.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "4778a02b23a4c01ec2d24a59713d33ac"
+    },
     "data.table": {
       "Package": "data.table",
       "Version": "1.14.0",
@@ -511,6 +518,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "9ace652bffef34af558eb5d70903ac2f"
+    },
+    "here": {
+      "Package": "here",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "24b224366f9c2e7534d2344d10d59211"
     },
     "highr": {
       "Package": "highr",

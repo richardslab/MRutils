@@ -124,17 +124,21 @@ jobs:
             cat("package built! Output is", file, "\n")  
             output<-glue::glue("::set-output name=file::{file}")
             cat("output will be: |--->" , output, "<----|")
+            cat("\n")
             cat(output)
-            cat(\n)
+            cat(\n) 
 
         run: |
           conda run -n MRutils Rscript -e '${{ env.command }}'
       - 
+        name: show variable
+        run: echo ${{ steps.packages.outputs.file }}
+      -
         name: create package artifact
         uses: actions/upload-artifact@v2
         with:
           name: package-${{ matrix.os }}
-          path: ${{ steps.packages.outputs.file }}"
+          path: /home/runner/work/MRutils/MRutils_0.0.1.0.tar.gz
           if-no-files-found: error
           retention-days: 60
       - 

@@ -1,5 +1,39 @@
 
 
+
+
+get_rsid <-
+  function(chrom,
+           pos,
+           ref,
+           alt,
+           assembly = "hg19",
+           cache_file = NULL,
+           update_cache = TRUE) {
+    #try cache?
+    try_cache <- is.null(cache_file) || file.exists(cache_file)
+    update_cache <- try_cache && update_cache
+    
+    rsid = NULL
+    if (try_cache) {
+      rsid = get_cached_rsid_from_position(chrom, pos, ref, alt, assembly = "hg19")
+    }
+    
+    if (is.null(rsid)) {
+      rsid = get_rsid_from_position(chrom, pos, ref, alt, assembly = "hg19")
+    } else {
+      update_cache = FALSE
+    }
+    if (!is.null(rsid) && update_cache) {
+      cat(glue::glue("writing rsid to cache {rsid}\n"))
+      Sys.sleep(1)
+      put_rsid_into_cache(rsid, chrom, pos, ref, alt, assembly, cache_file)
+    }
+    
+    rsid
+  }
+
+
 #' Get rsid name from position
 #'
 #' This method accesses the NCI's API and queries a position (CHR & POS) and variant (REF & ALT)
@@ -77,9 +111,82 @@ get_rsid_from_position <-
       warning(paste("there was an error:", e))
       NULL
     })
-    as.character(retVal)
+    retVal
   }
 
+col_types <- readr::cols(
+  RSID = readr::col_character(),
+  CHR = readr::col_double(),
+  POS = readr::col_double(),
+  REF = readr::col_character(),
+  ALT = readr::col_character()
+)
+
+get_cached_rsid_from_position <-
+  function(chrom,
+           pos,
+           ref,
+           alt,
+           assembly = "hg19",
+           cache = NULL) {
+    if (is.null(cache)) {
+      cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
+    }
+    if (file.exists(cache_file)) {
+      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>% subset(CHR == chrom &
+                                                                                                 POS == pos &
+                                                                                                 (REF == ref &
+                                                                                                    ALT == alt |
+                                                                                                    REF == alt &
+                                                                                                    ALT == ref))
+      if (nrow(cached) == 1)
+        return(cached$RSID[1])
+      if (nrow(cached) > 1)
+        error(glue::glue("found more than one row corresponding to query: {cached}"))
+    } else {
+      cat(glue::glue("cache file {cache_file} doesn't exist."))
+    }
+    return(NULL)
+  }
+
+
+
+put_rsid_into_cache <-
+  function(rsid,
+           chrom,
+           pos,
+           ref,
+           alt,
+           assembly = "hg19",
+           cache = NULL) {
+    if (is.null(cache)) {
+      cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
+    }
+     
+    new_row = data.frame(
+      RSID = rsid,
+      CHR = chrom,
+      POS = pos,
+      REF = ref,
+      ALT = alt
+    )
+
+    if (!file.exists(cache_file)) {
+      readr::write_tsv(new_row, cache_file)
+      return(FALSE)
+    } else {
+      cached = get_cached_rsid_from_position(chrom, pos, ref, alt)
+      
+      if (is.null(cached)) {
+        readr::write_tsv(new_row, cache_file, append = TRUE)
+        return(FALSE)
+      }
+      if (cached != rsid)
+        error(glue::glue("found row with same coordinates but different id: {cached}"))
+    }
+    readr::write_tsv(new_row, cache_file, append = TRUE)
+    return(TRUE)
+  }
 
 #' Method to obtain rsids for records in a gwas where they are missing
 #'
@@ -113,7 +220,7 @@ get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
   
   ## this can take time and hits the API multiple times....
   withIds <- plyr::adply(unknown_ids, 1, function(x) {
-    c(rsid = get_rsid_from_position(
+    c(rsid = get_rsid(
       chrom = x$CHR,
       pos = x$POS,
       ref = x$NEA,
