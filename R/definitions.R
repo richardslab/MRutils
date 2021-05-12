@@ -69,6 +69,7 @@ gwas_types_validator <- validate::validator(
   eaf_is_numeric = is.numeric(EAF),
   se_is_numeric = is.numeric(SE),
   pos_is_numeric = is.numeric(POS),
+  chr_is_chr = is.character(CHR),
   required_headers_present = all(required_headers %in% names(.))
 )
 
@@ -98,9 +99,7 @@ gwas_validator <-
   rsid_validator +
   locus_validator +
   allele_validator +
-  stats_validator + 
-  gwas_types_validator
-
+  stats_validator
 
 #' Check that input is a dataframe that validates accordig to the validator and optionally
 #' show which data doesn't validate
@@ -117,6 +116,7 @@ assert_valid_data <- function(data, validator, show_error=TRUE) {
   if (any(val_sum$error) || any(val_sum$fails > 0)) {
     if(show_error) {
       methods::show(val_sum)
+    
       methods::show(validate::violating(as.data.frame(data), validator))
     }
     print(glue::glue("problem with the data against validator: {validator}"))
@@ -153,8 +153,10 @@ valid_references <- c("hg18", "hg19", "hg38")
 #'  }
 #'
 #'
-assert_gwas <- assert_rsids <- curry::partial(assert_valid_data, list(validator=gwas_validator))
-
+assert_gwas <- function(data, show_error=TRUE){
+  assert_valid_data(data, gwas_validator, show_error)
+  assert_valid_data(data, gwas_types_validator, FALSE)
+}
 
 #' Check that input is a vector of strings that look like rsids
 #'
@@ -178,4 +180,34 @@ assert_gwas <- assert_rsids <- curry::partial(assert_valid_data, list(validator=
 #'
 #'
 assert_rsids <- curry::partial(assert_valid_data, list(validator=rsid_validator))
+
+
+#' Check that input is a vector of strings that look like rsids
+#'
+#' @param data a dataframe that has a column rsid which will be validated
+#' @param show_error if data does _not_ validate, whether to show the reasons
+#' 
+#'
+#' @return TRUE if valid, will throw a validation error is invalid
+#' 
+#'
+#' @export
+#'
+#' @examples
+#' assert_rsids(data.frame(rsid=c("rs001101","rs00042"))) # TRUE
+#' assert_rsids(data.frame(rsid=c("rs001101"))) # TRUE
+#' assert_rsids(data.frame(rsid="rs001101")) # TRUE
+#'
+#' if (FALSE) {
+#'    assert_rsids(data.frame(rsid=c("001101","rs00042"))) ## error
+#' }
+#'
+#'
+assert_probabilities <- curry::partial(assert_valid_data, list(validator=rsid_validator))
+
+assert_probability <-function(p){
+  assertthat::assert_that(p<=1)
+  assertthat::assert_that(0<=p)
+}
+  
 

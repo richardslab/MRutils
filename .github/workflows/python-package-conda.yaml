@@ -94,7 +94,7 @@ jobs:
         name: Restore packages
         env: 
           command: |
-            if (!requireNamespace("renv", quietly = TRUE)){
+            if (!requireNamespace("renv", quietly = FALSE)){
               cat("Installing renv from CRAN.")
               install.packages("renv", repos = "http://cran.us.r-project.org")
             }
@@ -123,10 +123,9 @@ jobs:
             file <- devtools::build()
             cat("package built! Output is", file, "\n")  
             output<-glue::glue("::set-output name=file::{file}")
-            cat("output will be: |--->" , output, "<----|")
             cat("\n")
             cat(output)
-            cat(\n) 
+            cat("\n") 
 
         run: |
           conda run -n MRutils Rscript -e '${{ env.command }}'
@@ -138,23 +137,26 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: package-${{ matrix.os }}
-          path: /home/runner/work/MRutils/MRutils_0.0.1.0.tar.gz
+          path: ${{ steps.packages.outputs.file }}
           if-no-files-found: error
           retention-days: 60
       - 
         name: Test R libraries (Two Sample MR and LD-LinkR)
         run: |
-          conda run -n MRutils R -e 'library(TwoSampleMR); library(LDlinkR);'
+          conda run -n MRutils R -e 
+          'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: Test dplyr
         shell: Rscript {0}
-        run: library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);
+        run: |
+          conda run -n MRutils Rscript -e 
+          'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
       - 
-        name: Run R tests
+        name: Run tests
         run: |
           ls
           pwd 
-          R -e 'devtools::test();'
+          conda run -n MRutils Rscript -e devtools::test();'
 
   # run-VDMR-conda:
   #   name: Build Environment and also do the VDMR analysis

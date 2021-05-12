@@ -71,8 +71,9 @@ extract_snps_from_bgzip <-
     outcome_data <-
       utils::read.table(temp_output, col.names = col_names) %>%
       mapping_function
-    
-    assert_gwas(outcome_data)
+    if (validate) {
+      assert_gwas(outcome_data)
+    }
     outcome_data
   }
 
