@@ -142,13 +142,13 @@ jobs:
           retention-days: 60
       - 
         name: Test R libraries (Two Sample MR and LD-LinkR)
-        run: |
+        run: >
           conda run -n MRutils R -e 
           'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: Test dplyr
         shell: Rscript {0}
-        run: |
+        run: >
           conda run -n MRutils Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
       - 
@@ -156,7 +156,7 @@ jobs:
         run: |
           ls
           pwd 
-          conda run -n MRutils Rscript -e devtools::test();'
+          conda run -n MRutils Rscript -e 'devtools::test();'
 
   # run-VDMR-conda:
   #   name: Build Environment and also do the VDMR analysis

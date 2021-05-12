@@ -109,17 +109,20 @@ gwas_validator <-
 #' @param show_error if data does _not_ validate, whether to show the reasons
 #' 
 
-assert_valid_data <- function(data, validator, show_error=TRUE) {
+assert_valid_data <- function(data, validator, show_error = c("all","none","summ") ) {
+  show_error <- match.arg(show_error)
   val_sum <-
     validate::summary(validate::confront(data, validator))
   
   if (any(val_sum$error) || any(val_sum$fails > 0)) {
-    if(show_error) {
-      methods::show(val_sum)
-    
-      methods::show(validate::violating(as.data.frame(data), validator))
+    if (show_error == "all" || show_error == "summ") {
+      methods::show(subset(val_sum, fails!=0 | error))
     }
-    print(glue::glue("problem with the data against validator: {validator}"))
+    if (show_error == "all"){
+      methods::show(validate::violating(as.data.frame(data), validator))
+      methods::show(validate::errors(as.data.frame(data), validator))
+    }
+    assertthat::assert_that(FALSE, "There's a problem with the data")
   }
   
   invisible(TRUE)
@@ -153,9 +156,10 @@ valid_references <- c("hg18", "hg19", "hg38")
 #'  }
 #'
 #'
-assert_gwas <- function(data, show_error=TRUE){
+assert_gwas <- function(data, show_error = c("all", "none", "summ")) {
+  show_error <- match.arg(show_error)
   assert_valid_data(data, gwas_validator, show_error)
-  assert_valid_data(data, gwas_types_validator, FALSE)
+  assert_valid_data(data, gwas_types_validator, if(show_error=="all") "summ" else show_error)
 }
 
 #' Check that input is a vector of strings that look like rsids
@@ -205,9 +209,10 @@ assert_rsids <- curry::partial(assert_valid_data, list(validator=rsid_validator)
 #'
 assert_probabilities <- curry::partial(assert_valid_data, list(validator=rsid_validator))
 
-assert_probability <-function(p){
-  assertthat::assert_that(p<=1)
-  assertthat::assert_that(0<=p)
+
+assert_probability <- function(p) {
+  assertthat::assert_that(p <= 1)
+  assertthat::assert_that(0 <= p)
 }
-  
+
 
