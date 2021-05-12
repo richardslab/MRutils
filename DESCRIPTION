@@ -33,6 +33,5 @@ Imports:
     xfun,
     validate,
     assertthat,
-    methods,
-    Rmpfr
+    methods
 VignetteBuilder: knitr
