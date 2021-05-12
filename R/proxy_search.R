@@ -3,15 +3,22 @@
 get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE, r2_threshold = 0.9) {
   
   xfun::in_dir(results_dir, {
+    
+    raw_rs_files=dir(".", "^rs[0-9]*\\.txt")
+    
+    rsFiles <- Filter(function(x) file.info(x)$size > 1000, raw_rs_files)
+
+    missing_rsids <- setdiff(rsids, gsub("\\.txt$","", raw_rs_files)) 
+    
     # this takes time and hits the LDlink API.
-    if (!skip_api) {
-      LDlinkR::LDproxy_batch(rsids, pop = population, r2d = "r2", append = F, token = token)
+    if (length(missing_rsids)>0) {
+      if( !skip_api) {
+        LDlinkR::LDproxy_batch(missing_rsids, pop = population, r2d = "r2", append = F, token = token)
+        rsFiles <- Filter(function(x) file.info(x)$size > 1000, dir(".", "^rs[0-9]*\\.txt"))
+      } else {
+        warning(glue::glue("Not calling the LDproxy api, but there are some missing rsids in the results dir:{missing_rsids}"))
+      }
     }
-    
-    ## the filter is here because when LDproxy_batch failes, it creates a small file with the error message...
-    rsFiles <- Filter(function(x) file.info(x)$size > 1000, 
-                      dir(".", "^rs[0-9]*\\.txt"))
-    
     
     R2 <- Locus <- Coord <- Alleles <- RS_Number <- NULL
     # only read snps  
@@ -23,6 +30,7 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
              POS = as.integer(do.call(rbind, strsplit(as.character(Locus), split = ':', fixed = TRUE))[,2])) %>% 
       subset(R2 >= r2_threshold)
   })
+  assert_proxies(proxies)
   proxies
 }
 

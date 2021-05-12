@@ -82,6 +82,12 @@ allele_validator <- validate::validator(
   eaf_is_prob = in_range(EAF, 0, 1)
 )
 
+proxy_allele_validator <- validate::validator(
+  Alleles = field_format(Alleles, "([ACGT]/[ACGT])", type = "regex"),
+  Correlated_Alleles = field_format(Correlated_Alleles, "[ACGT]=[ACGT],[ACGT]=[ACGT]", type = "regex")
+)
+
+
 
 #' stats information validator
 #' @name stats_validator
@@ -91,6 +97,16 @@ stats_validator <- validate::validator(
   p_is_prob = in_range(P, 0, 1, strict = TRUE)
 )
 
+#' stats information validator
+#' @name proxy_stats_validator
+#' @keywords internal
+proxy_stats_validator <- validate::validator(
+  MAF_is_prob = in_range(MAF, min = 0, 1, strict = FALSE),
+  R2_is_prob = in_range(Rs, 0, 1, strict = FALSE)
+)
+
+
+proxy_validator <- rsid_validator + locus_validator + proxy_stats_validator
 
 #' locus information validator
 #' @name gwas_validator
@@ -209,6 +225,7 @@ assert_rsids <- curry::partial(assert_valid_data, list(validator=rsid_validator)
 #'
 assert_probabilities <- curry::partial(assert_valid_data, list(validator=rsid_validator))
 
+assert_proxies <- curry::partial(assert_valid_data, list(validator=proxy_validator))
 
 assert_probability <- function(p) {
   assertthat::assert_that(p <= 1)

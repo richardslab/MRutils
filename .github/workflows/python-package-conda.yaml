@@ -142,17 +142,19 @@ jobs:
           retention-days: 60
       - 
         name: Test R libraries (Two Sample MR and LD-LinkR)
+        if: failure()
         run: >
           conda run -n MRutils R -e 
           'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: Test dplyr
-        shell: Rscript {0}
+        if: failure()
         run: >
           conda run -n MRutils Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
       - 
         name: Run tests
+        if: failure()
         run: |
           ls
           pwd 
