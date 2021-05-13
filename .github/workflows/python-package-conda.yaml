@@ -155,10 +155,9 @@ jobs:
       - 
         name: Run tests
         if: always()
-        run: |
-          ls
-          pwd 
-          conda run -n MRutils Rscript -e 'devtools::test();'
+        run: >
+          conda run -n MRutils Rscript -e 
+          'devtools::test();'
 
   # run-VDMR-conda:
   #   name: Build Environment and also do the VDMR analysis
