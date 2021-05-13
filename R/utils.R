@@ -1,5 +1,12 @@
 
 
+mutate_cond <- function(.data, condition, ..., envir = parent.frame()) {
+  condition <- eval(substitute(condition), .data, envir)
+  .data[condition, ] <- .data[condition, ] %>% mutate(...)
+  .data
+}
+
+
 #' Method to filter and save exposure data
 #'
 #' @param data a dataframe with possibly snps that we want. Expected columns are P (p-value) and EAF (effect allele frequency)

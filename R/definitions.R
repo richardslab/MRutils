@@ -136,7 +136,8 @@ assert_valid_data <- function(data, validator, show_error = c("all","none","summ
     }
     if (show_error == "all"){
       methods::show(validate::violating(as.data.frame(data), validator))
-      methods::show(validate::errors(as.data.frame(data), validator))
+      # methods::show(validate::errors(as.data.frame(data), validator))
+      
     }
     assertthat::assert_that(FALSE, "There's a problem with the data")
   }

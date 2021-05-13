@@ -1,5 +1,7 @@
 
 
+
+
 get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE, r2_threshold = 0.9) {
   
   xfun::in_dir(results_dir, {
@@ -28,7 +30,7 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
       dplyr::select(c(-"Distance", -"Dprime", -"RegulomeDB", -"Function", -"RS_Number", -"Coord")) %>% 
       dplyr::mutate(CHR = gsub(pattern = "^chr", replacement = "", do.call(rbind, strsplit(as.character(Locus), split = ':', fixed = TRUE))[,1]),
              POS = as.integer(do.call(rbind, strsplit(as.character(Locus), split = ':', fixed = TRUE))[,2])) %>% 
-      subset(R2 >= r2_threshold)
+      subset(R2 >= r2_threshold) %>% mutate_cond(condition = rsid==".", rsid=NA)
   })
   assert_proxies(proxies)
   proxies
