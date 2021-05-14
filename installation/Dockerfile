@@ -15,7 +15,7 @@ WORKDIR /app
 COPY 01-install_conda.sh /app/
 RUN ./01-install_conda.sh
 
-ENV PATH=/miniconda/bin:${PATH}
+ENV PATH=/root/miniconda/bin:${PATH}
 RUN conda update -y conda
 
 # Make RUN commands use `bash --login`:

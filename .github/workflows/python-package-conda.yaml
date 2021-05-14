@@ -17,6 +17,10 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
+    env:
+      RENV_PATHS_ROOT: ~/.local/share/renv
+
     steps:
       - 
         uses: actions/checkout@v2
@@ -47,7 +51,7 @@ jobs:
           python-version: 3.6
           activate-environment: MRutils
           mamba-version: "*"
-          channels: conda-forge,r,bioconda,defaults,anaconda
+          channels: conda-forge,defaults
           channel-priority: strict
           environment-file: installation/environment_modified.yaml
           use-only-tar-bz2: true
@@ -62,15 +66,18 @@ jobs:
           path: MRutils_${{ matrix.os }}.yaml
           if-no-files-found: error
           retention-days: 60
-      -
-        name: test curl
-        run: |
-          conda activate MRutils
-          R -e 'library(curl);'
-      -
-        name: post conda steps
-        run: |
-          GITHUB_PAT=${{ secrets.PAT_GITHUB }} installation/03-post_conda_steps.sh 
+      
+      - name: Cache R packages
+        uses: actions/cache@v1
+        with:
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - 
+        name: activate MRutils environment
+        run: conda activate MRutils
       -
         name: Conda info
         run: |
@@ -79,23 +86,78 @@ jobs:
           conda config --show-sources
           conda config --show
           printenv | sort
+      -
+        name: Find installed R packags
+        run: |
+          conda run -n MRutils Rscript -e 'installed.packages\(\)'
+      -
+        name: Restore packages
+        env: 
+          command: |
+            if (!requireNamespace("renv", quietly = FALSE)){
+              cat("Installing renv from CRAN.")
+              install.packages("renv", repos = "http://cran.us.r-project.org")
+            }
+            cat("Restoring the renv environment.\n")
+            renv::restore()
+        run: |
+          conda run -n MRutils Rscript -e '${{ env.command }}'
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
+        with:
+          limit-access-to-actor: true
+      - 
+        name: build packages
+        id: packages
+        env: 
+          command: |
+            if (!requireNamespace("devtools", quietly = TRUE)){ 
+              cat("Package devtools not available, installing from CRAN.\n")
+              install.packages("devtools", repos = "http://cran.us.r-project.org")
+            }
+            cat("building package!\n")
+             
+            file <- devtools::build()
+            cat("package built! Output is", file, "\n")  
+            output<-glue::glue("::set-output name=file::{file}")
+            cat("\n")
+            cat(output)
+            cat("\n") 
+
+        run: |
+          conda run -n MRutils Rscript -e '${{ env.command }}'
+      - 
+        name: show variable
+        run: echo ${{ steps.packages.outputs.file }}
+      -
+        name: create package artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: package-${{ matrix.os }}
+          path: ${{ steps.packages.outputs.file }}
+          if-no-files-found: error
+          retention-days: 60
       - 
         name: Test R libraries (Two Sample MR and LD-LinkR)
-        run: |
-          conda activate MRutils
-          R -e 'library(TwoSampleMR); library(LDlinkR);'
+        if: always()
+        run: >
+          conda run -n MRutils R -e 
+          'library(TwoSampleMR); library(LDlinkR);'
       - 
         name: Test dplyr
+        if: always()
         run: >
           conda run -n MRutils Rscript -e 
           'library(dplyr); wanted=c("eruptions"); faithful%>%subset(select=wanted);'
       - 
-        name: Run R tests
-        run: |
-          ls
-          pwd
-          conda activate MRutils 
-          R -e 'devtools::test();'
+        name: Run devtools::check
+        if: always()
+        run: >
+          conda run -n MRutils Rscript -e 
+          'library(devtools); check();'
 
   # run-VDMR-conda:
   #   name: Build Environment and also do the VDMR analysis

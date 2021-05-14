@@ -1,38 +1,29 @@
-#!/usr/bin/env R
-
-Sys.setenv(TAR = 'env tar')
-
-# for some reason, now I need devtools version 1.2.1 and that's not available via conda....
-install.packages("devtools", repos = "https://cloud.r-project.org") 
-install.packages(c("MendelianRandomization", "mr.raps"), repos = "https://cloud.r-project.org") 
-
-install <- function(repo, ref){
-	devtools::install_github(repo,
-		ref = ref,
-		quiet = FALSE,
-		upgrade = FALSE)
-}
-
-install("rondolab/MR-PRESSO", "cece763b47e59763a7916974de43c7cb93843e41")
-install("WSpiller/RadialMR", "25aa8a5e64d1318c9d40646b1fd2d2847fb0a0d7")
-install("gqi/MRMix", "56afdb2bc96760842405396f5d3f02e60e305039")
-install("mrcieu/ieugwasr", "ff3ef11f4514ba0431bbe19635704ab1428ed129")
-install("MRCIEU/MRInstruments","0.3.3")
-
-# TODO: there are several libraries that I was unable to install via neither 
-# conda nor github, so they will be installed at this point as dependencies. 
-# it would be better to fix this, but I was unsuccessful
-
-# devtools::install_version("meta",version = "4.18-0",repos = "http://cran.us.r-project.org")
-# tmvnsim_1.0-2
-# CompQuadForm_1.4.3
-# mnormt_2.0.2
-# meta_4.18-0
-# psych_2.1.3
-# cowplot_1.1.1
-# gridExtra_2.3
-
-install("MRCIEU/TwoSampleMR", "0.5.4")
+#!/usr/bin/env Rscript
 
 
-install.packages("rstudio", repos = "https://cloud.r-project.org")
+#!/usr/bin/env Rscript
+args <- commandArgs(trailingOnly=TRUE)
+# test if there is at least one argument: if not, return an error
+if (length(args)==0) {
+  stop("At least one argument must be supplied (lock file).n", call.=FALSE)
+} 
+project_root <- args[1]
+
+cat("project is", project_root,"\n")
+
+packages_to_install <- c("dplyr","ggplot2","argparse","tidyverse","LDlinkR","devtools","openxlsx","mgsub","validate","testthat")
+
+cat("RNV init")
+renv::init(project=project_root, restart=TRUE, force=TRUE)
+
+cat("RNV install packages")
+renv::install(project=project_root, packages_to_install)
+
+cat("RNV install github")
+renv::install(project=project_root, "MRCIEU/TwoSampleMR")
+
+cat("RNV hydrate")
+renv::hydrate(project=project_root)
+
+cat("RNV snapshot")
+renv::snapshot(project=project_root, directory="R")

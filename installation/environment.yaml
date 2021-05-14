@@ -1,48 +1,16 @@
 channels:
-  - r
   - conda-forge
-  - bioconda
   - defaults
-  - anaconda
 
 dependencies:
   - python=3.6
-  - tabix
+  - bioconda::tabix
   - gfortran_linux-64 #{{linux-only}}
+  - gmp
   - libgit2 #{{osx-only}}
-  - r::r-stringi
-  - r-argparse
-  - r-tidyverse>=1.2
-  - r-base=3.6.1
-  - r-essentials=3.6.0
-  - r-readxl>=1.3
-  - rstudio>=1.1
-  - r-ggplot2  # needs channel conda-forge
-  - r-ldlinkr>=1.0.0 # needs channel bioconda
-  - r-curl>=3.3 
-  - r-devtools
-  - r-plotly
-  - r-openxlsx
-  - r-gmp
-  - r-metafor
-  - r-rio>=0.5.26
-  - r-lme4
-  - r-pbkrtest
-  - r-car
-  - r-mgsub
-  - r-validate
-  - r-testthat
-  
-  # - r-gargle=1.1.0
-  # - r-googleauthr=1.4.0
-  # - r-bh=1.75.0_0
-  # - r-matrix
-# TODO: I was unable to install these via conda, 
-# they are currently installed during the github_install step of TwoSampleMR
-# it would be better if we found a way to lock down the version of these libraries...
-  #  - r-devtools==2.4.0
-  # - r::r-gridextra=2.2.1 
-  # - r-cowplot 0.9.4
-  # - r-psych<=1.9.12
-  # - r-meta<=4.11_0   
+  - rstudio #{{osx-only}}
+  - r-base=4.0.3
+  - r-essentials
+  - r-renv
+
   

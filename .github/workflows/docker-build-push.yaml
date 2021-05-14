@@ -3,10 +3,10 @@ name: docker-build-push
 on:
   pull_request:
     branches:
-      - main
+      - main_disabled
   push:
     branches:
-      - '**'
+      - 'disabled'
 env:
     dockerhub_repository: mr_utils
     dockerhub_organization: richardslab

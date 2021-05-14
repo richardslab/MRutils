@@ -1,1 +1,8 @@
+^renv$
+^renv\.lock$
 ^\.github$
+^.*\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+LD_LINK_TOKEN
+installation
