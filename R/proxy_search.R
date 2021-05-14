@@ -22,7 +22,7 @@ get_proxies <- function(rsids, token, population, results_dir, skip_api = FALSE,
       }
     }
     
-    R2 <- Locus <- Coord <- Alleles <- RS_Number <- NULL
+    R2 <- Locus <- Coord <- Alleles <- RS_Number <- rsid <- NULL
     # only read snps  
     proxies <- plyr::ldply(rsFiles, function(x) dplyr::mutate(query_rsid = gsub("\\.txt$", "", x), utils::read.table(x, sep = "\t")) %>% 
                        subset(R2 >= 0 & grepl("([ACGT]/[ACGT])", x = Alleles))) %>% 

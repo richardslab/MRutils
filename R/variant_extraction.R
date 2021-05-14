@@ -15,7 +15,9 @@
 #' @param comment_char The character that is the comment character in the file.
 #' @param mapping_function A function that will map the gwas as it is read from disk
 #' to a dataframe that will be sanity-checked as being a gwas.
-#'
+#' @param validate a boolean indicating whether to validate the resulting gwas 
+#' (after applying the mapping function) (TRUE by default) use FALSE for debugging.
+#' 
 #' @return a gwas containing the subset of the outcome file that was requested.
 #'  The first non-commented line will be assumed to be the header line. It will be
 #'  retained and used as the column names for the resulting sub-gwas.
@@ -25,11 +27,11 @@
 #' @examples
 #'
 #' partial_gwas <- system.file("extdata", "COVID_partial_gwas_hg37.txt.gz", package = "MRutils")
-#' system(glue::glue("tabix -s 1 -b 2 -e 2 -f {partial_gwas}"))
+#' system(glue::glue("tabix -s 1 -b 2 -e 2 -f '{partial_gwas}'"))
 #' 
 #' mapping_function <- function(x) {
 #'    dplyr::mutate(x,
-#'       CHR=X.CHR,
+#'       CHR=as.character(X.CHR),
 #'       beta = all_inv_var_meta_beta, 
 #'       P = all_inv_var_meta_p, 
 #'       EA = ALT, 
@@ -66,7 +68,7 @@ extract_snps_from_bgzip <-
                             tmpdir = tempdir(),
                             fileext = ".txt")
     
-    cmd <- glue::glue("tabix -f '{outcome}' {region} > {temp_output}")
+    cmd <- glue::glue("tabix -f '{outcome}' {region} > '{temp_output}'")
     system(cmd)
     outcome_data <-
       utils::read.table(temp_output, col.names = col_names) %>%

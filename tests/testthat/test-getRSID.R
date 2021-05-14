@@ -17,11 +17,11 @@ test_that("can get_rsid_from_position with chr", {
 test_that("get_rsid_from_position warns appropriately", {
   expect_warnings(val <-
                     get_rsid_from_position("chr9", 125711603, "A", "C"), 3)
-  expect_equal(val, as.character(NULL))
+  expect_equal(val, NULL)
   
   expect_warnings(val <-
                     get_rsid_from_position("9", 125711603, "T", "C"), 3)
-  expect_equal(val, as.character(NULL))
+  expect_equal(val, NULL)
   
 })
 
@@ -29,7 +29,7 @@ test_that("get_rsid_from_position warns appropriately", {
 test_that("get_rsid_from_position errors appropriately", {
   expect_error(get_rsid_from_position("blarg", 125711603, "C", "A"))
   expect_error(get_rsid_from_position("9", 0, "A", "C"))
-  expect_error(get_rsid_from_position("9",-125711603, "C", "A"))
+  expect_error(get_rsid_from_position("9", -125711603, "C", "A"))
   expect_error(get_rsid_from_position("9", 125711603, "5", "1"))
   expect_error(get_rsid_from_position("0", 125711603, "C", "A"))
   

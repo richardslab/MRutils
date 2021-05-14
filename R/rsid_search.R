@@ -122,6 +122,23 @@ col_types <- readr::cols(
   ALT = readr::col_character()
 )
 
+
+#' Get rsid name from position
+#'
+#' This method accesses the NCI's API and queries a position (CHR & POS) and variant (REF & ALT)
+#' to obtain a rsid. If it fails, it will attempt to swap REF and ALT before giving up.
+#'
+#' @param chrom The name of the contig for the SNP
+#' @param pos The (1-based) position of the SNP
+#' @param ref The reference allele (only SNPs are supported)
+#' @param alt The alternate allele (only SNPs are supported)
+#' @param assembly Which reference genome to use ("hg18", "hg19", or "hg38")
+#'
+#' @return an rsid identifier of the position provided
+#' 
+#' @keywords internal
+#' @export
+#'
 get_cached_rsid_from_position <-
   function(chrom,
            pos,
@@ -132,17 +149,21 @@ get_cached_rsid_from_position <-
     if (is.null(cache)) {
       cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
     }
+    
+    CHR <- POS <- REF <- ALT <- NULL
+    
     if (file.exists(cache_file)) {
-      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>% subset(CHR == chrom &
-                                                                                                 POS == pos &
-                                                                                                 (REF == ref &
-                                                                                                    ALT == alt |
-                                                                                                    REF == alt &
-                                                                                                    ALT == ref))
+      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>% 
+        subset(CHR == chrom &
+                 POS == pos &
+                 (REF == ref &
+                    ALT == alt |
+                    REF == alt &
+                    ALT == ref))
       if (nrow(cached) == 1)
         return(cached$RSID[1])
       if (nrow(cached) > 1)
-        error(glue::glue("found more than one row corresponding to query: {cached}"))
+        stop(glue::glue("found more than one row corresponding to query: {cached}"))
     } else {
       cat(glue::glue("cache file {cache_file} doesn't exist."))
     }
@@ -162,6 +183,9 @@ put_rsid_into_cache <-
     if (is.null(cache)) {
       cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
     }
+    
+    RSID <- CHR <- POS <- REF <- ALT <- NULL
+    
      
     new_row = data.frame(
       RSID = rsid,
@@ -170,8 +194,13 @@ put_rsid_into_cache <-
       REF = ref,
       ALT = alt
     )
-
+    
+    if (!file.exists(dirname(cache_file))) {
+      dir.create(dirname(cache_file), recursive = TRUE)
+    }
+    
     if (!file.exists(cache_file)) {
+      
       readr::write_tsv(new_row, cache_file)
       return(FALSE)
     } else {
@@ -182,7 +211,7 @@ put_rsid_into_cache <-
         return(FALSE)
       }
       if (cached != rsid)
-        error(glue::glue("found row with same coordinates but different id: {cached}"))
+        stop(glue::glue("found row with same coordinates but different id: {cached}"))
     }
     readr::write_tsv(new_row, cache_file, append = TRUE)
     return(TRUE)
