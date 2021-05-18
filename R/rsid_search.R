@@ -1,25 +1,27 @@
 
 
 
-
 get_rsid <-
   function(chrom,
            pos,
            ref,
            alt,
-           assembly = "hg19",
+           assembly = valid_references,
            cache_file = NULL,
            update_cache = TRUE) {
     #try cache?
+    assembly <- match.arg(assembly)
     try_cache <- is.null(cache_file) || file.exists(cache_file)
     update_cache <- try_cache && update_cache
     
     rsid = NULL
     if (try_cache) {
+      print(glue::glue("getting cached rsid for {chrom}:{pos}"))
       rsid = get_cached_rsid_from_position(chrom, pos, ref, alt, assembly = "hg19")
     }
     
     if (is.null(rsid)) {
+      print(glue::glue("getting fresh rsid for {chrom}:{pos}"))
       rsid = get_rsid_from_position(chrom, pos, ref, alt, assembly = "hg19")
     } else {
       update_cache = FALSE
@@ -55,7 +57,8 @@ get_rsid <-
 #'
 #'
 get_rsid_from_position <-
-  function(chrom, pos, ref, alt, assembly = "hg19") {
+  function(chrom, pos, ref, alt, assembly = valid_references) {
+    assembly <- match.arg(assembly)
     assertthat::assert_that(assembly %in% valid_references)
     assertthat::assert_that(chrom %in% valid_contigs |
                               chrom %in% valid_contigs_with_chr)
@@ -144,8 +147,9 @@ get_cached_rsid_from_position <-
            pos,
            ref,
            alt,
-           assembly = "hg19",
+           assembly = valid_references,
            cache = NULL) {
+    assembly <- match.arg(assembly)
     if (is.null(cache)) {
       cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
     }
@@ -178,8 +182,9 @@ put_rsid_into_cache <-
            pos,
            ref,
            alt,
-           assembly = "hg19",
+           assembly = valid_references,
            cache = NULL) {
+    assembly <- match.arg(assembly)
     if (is.null(cache)) {
       cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
     }
@@ -220,9 +225,10 @@ put_rsid_into_cache <-
 #' Method to obtain rsids for records in a gwas where they are missing
 #'
 #' The method looks at all the rows for which rsid is NA and gets their rsid by
-#' calling merge_rsids_into_gwas and merging the resulting rsids into the gwas
+#' calling get_unknown_rsids_from_locus and merging the resulting rsids into the gwas
+#' using merge_rsids_into_gwas
 #'
-#'
+#' @name fill_gwas_unknown_rsids
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
 #' @param assembly one of "hg18", "hg19" (default), "hg38".
 #'
@@ -232,10 +238,44 @@ put_rsid_into_cache <-
 #' @examples
 #'
 #' any(is.na(demo_data$rsid)) # TRUE
-#' fixed_gwas = get_unknown_rsids_from_locus(demo_data)
+#' fixed_gwas = fill_gwas_unknown_rsids(demo_data)
 #' any(is.na(fixed_gwas$rsid)) # FALSE
+#' nrow(fixed_gwas) == nrow(demo_data) # TRUE
+#' 
 #'
-get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
+fill_gwas_unknown_rsids <- function(gwas, assembly = valid_references) {
+  assembly <- match.arg(assembly)
+  assert_gwas(gwas)
+  withIds <- get_unknown_rsids_from_locus(gwas, assembly)
+  merge_rsids_into_gwas(gwas, withIds)
+}
+
+
+#' Method to obtain rsids for records in a gwas where they are missing
+#'
+#' The method looks at all the rows for which rsid is NA and gets their rsid by
+#' calling merge_rsids_into_gwas and merging the resulting rsids into the gwas
+#'
+#'
+#' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
+#' @param assembly one of "hg18", "hg19" (default), "hg38".
+#'
+#' @return subset of input gwas with available rsids replacing rsids where they were originally missing. Does
+#' not include all the columns in the original gwas, only CHR, POS, NEA, EA, rsid
+#' @export
+#' @keywords internal
+#'
+#'
+#' @examples
+#'
+#' any(is.na(demo_data$rsid)) # TRUE
+#' partial_gwas = get_unknown_rsids_from_locus(demo_data)
+#' any(is.na(partial_gwas$rsid)) # FALSE
+#' nrow(partial_gwas) == nrow(demo_data) # false
+#' 
+#'
+get_unknown_rsids_from_locus <- function(gwas, assembly = valid_references) {
+  assembly = match.arg(assembly)
   assert_gwas(gwas)
   assertthat::assert_that(assembly %in% valid_references)
   
@@ -245,7 +285,7 @@ get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
     x = gwas,
     subset = is.na(rsid),
     select = c(CHR, POS, NEA, EA)
-  ) %>% transform(assembly = assembly)
+  ) %>%plyr::mutate(assembly=assembly)
   
   ## this can take time and hits the API multiple times....
   withIds <- plyr::adply(unknown_ids, 1, function(x) {
@@ -256,11 +296,33 @@ get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
       alt = x$EA,
       assembly = x$assembly
     ))
-  })
+  }) %>% plyr::mutate(assembly=NULL)
+  
   withIds
 }
 
 
+
+#' Method to merge back rsids from a subset of a gwas into a full gwas where they were missing
+#'
+#'
+#' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
+#' @param rsids another gwas which contained a subset of the rows in gwas, presumably with 
+#' some rsids updated. 
+#'
+#' @return original input gwas with available rsids replacing rsids where possible
+#' @export
+#'
+#' @keyword internal
+#' @examples
+#'
+#' any(is.na(demo_data$rsid)) # TRUE
+#' fixed_partial_gwas <- get_unknown_rsids_from_locus(demo_data)
+#' any(is.na(fixed_partial_gwas$rsid)) # FALSE
+#' nrow(fixed_partial_gwas) == nrow(demo_data) # FALSE
+#' fixed_gwas <- merge_rsids_into_gwas(demo_data, fixed_partial_gwas)
+#' nrow(fixed_gwas) == nrow(demo_data) # TRUE
+#' 
 merge_rsids_into_gwas <- function(gwas, rsids) {
   assert_gwas(gwas)
   assert_rsids(rsids)

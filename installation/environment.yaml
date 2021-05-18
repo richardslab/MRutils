@@ -6,6 +6,8 @@ dependencies:
   - python=3.6
   - bioconda::tabix
   - gfortran_linux-64 #{{linux-only}}
+  - ghostscript
+  - pdfcrop
   - gmp
   - libgit2 #{{osx-only}}
   - rstudio #{{osx-only}}

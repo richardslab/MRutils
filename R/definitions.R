@@ -169,10 +169,14 @@ assert_valid_data <-
 
 
 #' List of human reference builds that can be used to find rsids
-#'
+#' 
+#' the order matters...the first one is the default value for methods that 
+#' need assembly as input.
+#' 
 #' @name valid_references
 #' @keywords internal
-valid_references <- c("hg18", "hg19", "hg38")
+#' @export
+valid_references <- c("hg19", "hg18", "hg38")
 
 #' Validate a dataframe as a gwas
 #'
