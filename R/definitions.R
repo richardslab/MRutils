@@ -42,18 +42,26 @@ valid_contigs <- c(1:22, "X", "Y")
 valid_contigs_with_chr <- paste0("chr", valid_contigs)
 
 
+#' contig validator
+#' @name chr_validator
+#' @keywords internal
+#'
+chr_validator <-
+  validate::validator(
+  chr_is_valid = CHR %in% valid_contigs |
+    all(CHR %in% valid_contigs_with_chr),
+  chr_is_valid_with_chr = CHR %in% valid_contigs_with_chr |
+    all(CHR %in% valid_contigs))
+
+
 #' locus information validator
 #' @name locus_validator
 #' @keywords internal
 #'
 locus_validator <-
   validate::validator(
-    chr_is_valid = CHR %in% valid_contigs |
-      all(CHR %in% valid_contigs_with_chr),
-    chr_is_valid_with_chr = CHR %in% valid_contigs_with_chr |
-      all(CHR %in% valid_contigs),
     pos_is_positive = POS > 0
-  )
+  ) + chr_validator
 
 
 #' rsid information validator
@@ -112,7 +120,7 @@ stats_validator <- validate::validator(
 #' @keywords internal
 proxy_stats_validator <- validate::validator(
   MAF_is_prob = in_range(MAF, min = 0, 1, strict = FALSE),
-  R2_is_prob = in_range(Rs, 0, 1, strict = FALSE)
+  R2_is_prob = in_range(R2, 0, 1, strict = FALSE)
 )
 
 
@@ -210,7 +218,7 @@ assert_gwas <-
                         show_error)
   }
 
-#' Check that input is a vector of strings that look like rsids
+#' Check that input contains an rsid column with values that look like rsids
 #'
 #' @param data a dataframe that has a column rsid which will be validated
 #' @param show_error if data does _not_ validate, which errors to show
@@ -234,6 +242,33 @@ assert_gwas <-
 assert_rsids <-
   function(data, show_error = c("all", "none", "summ"))
     assert_valid_data(data, validator = rsid_validator, show_error)
+
+
+#' Check that input contains a CHR column with values that look like (human) contigs
+#'
+#' @param data a dataframe that has a column CHR which will be validated
+#' @param show_error if data does _not_ validate, which errors to show
+#'
+#'
+#' @return TRUE if valid, will throw a validation error is invalid
+#'
+#' @export
+#'
+#' @examples
+#' assert_chr(data.frame(CHR=c("chr1","chr2"))) # TRUE
+#' assert_chr(data.frame(CHR=c("1","2"))) # TRUE
+#' 
+#' \dontrun{
+#'    assert_chr(data.frame(contig="1")) # column name needs to be "CHR"
+
+#'    # contigs should either all have "chr" or all not have it
+#'    assert_chr(data.frame(CHR=c("1", "chr2"))) 
+#'    assert_chr(data.frame(CHR="hello")) # value needs to be 1-22, X,Y or with "chr" prefix.
+#'}
+#'
+#'
+assert_chr <- function(data, show_error = c("all", "none", "summ"))
+  assert_valid_data(data, validator = chr_validator, show_error)
 
 
 #' Check that input is a vector of strings that look like rsids
@@ -267,7 +302,7 @@ assert_proxies <-
     assert_valid_data(data, validator = proxy_validator, show_error)
 
 
-# this asserts that a list of values "looks like" probabiilities 
+# this asserts that a list of values "looks like" probabilities 
 assert_probability <- function(p) {
   assertthat::assert_that(all(p <= 1))
   assertthat::assert_that(all(0 <= p))

@@ -1,6 +1,28 @@
 
 
-
+#' Get rsid name from position
+#'
+#' This method combines the cached and API version of get_rsid 
+#' 
+#' @param chrom The name of the contig for the SNP
+#' @param pos The (1-based) position of the SNP
+#' @param ref The reference allele (only SNPs are supported)
+#' @param alt The alternate allele (only SNPs are supported)
+#' @param assembly Which reference genome to use ("hg18", "hg19", or "hg38")
+#' @param cache_file Which file to use for caching results. if NULL will not use cache
+#' @param update_cache A boolean indicating whether to update the cache results.
+#'
+#' @return an rsid identifier of the position provided
+#' 
+#' @keywords internal
+#' @export
+#'
+#' @examples
+#'
+#'get_rsid_from_position("9", 125711603,	"C",	"A") # "rs10760259"
+#'
+#'
+#'
 get_rsid <-
   function(chrom,
            pos,
@@ -27,7 +49,7 @@ get_rsid <-
       update_cache = FALSE
     }
     if (!is.null(rsid) && update_cache) {
-      cat(glue::glue("writing rsid to cache {rsid}\n"))
+      print(glue::glue("writing rsid to cache {rsid}"))
       Sys.sleep(1)
       put_rsid_into_cache(rsid, chrom, pos, ref, alt, assembly, cache_file)
     }
