@@ -62,8 +62,6 @@ extract_snps_from_bgzip <-
       comment.char = comment_char,
     ) %>% names()
     
-    cat("column names: ", col_names, "\n")
-    
     temp_output <- tempfile(pattern = "subsetted_exposure__",
                             tmpdir = tempdir(),
                             fileext = ".txt")

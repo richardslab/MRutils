@@ -1,9 +1,11 @@
 
 
+
+
 #' Get rsid name from position
 #'
-#' This method combines the cached and API version of get_rsid 
-#' 
+#' This method combines the cached and API version of get_rsid
+#'
 #' @param chrom The name of the contig for the SNP
 #' @param pos The (1-based) position of the SNP
 #' @param ref The reference allele (only SNPs are supported)
@@ -13,14 +15,15 @@
 #' @param update_cache A boolean indicating whether to update the cache results.
 #'
 #' @return an rsid identifier of the position provided
-#' 
+#'
 #' @keywords internal
 #' @export
 #'
 #' @examples
 #'
-#'get_rsid_from_position("9", 125711603,	"C",	"A") # "rs10760259"
-#'
+#'get_rsid("9", 125711603, "C", "A") # "rs10760259"
+#'get_rsid("9", 136155000, "T", "C") # "rs635634"
+#'get_rsid("9", 136155000, "C", "T") # "rs635634"
 #'
 #'
 get_rsid <-
@@ -75,6 +78,8 @@ get_rsid <-
 #' @examples
 #'
 #'get_rsid_from_position("9", 125711603,	"C",	"A") # "rs10760259"
+#'get_rsid_from_position("9", 136155000, "T", "C") # "rs635634"
+#'get_rsid_from_position("9", 136155000, "C", "T") # "rs635634"
 #'
 #'
 #'
@@ -88,55 +93,57 @@ get_rsid_from_position <-
     assertthat::assert_that(alt %in% valid_alleles)
     assertthat::assert_that(pos > 0)
     
-    retVal <- tryCatch({
-      baseURL1 <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{ref}/{alt}/contextuals?assembly={assembly}"
-      baseURL1_swapped <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
-      
-      f <- tryCatch({
-        url <- glue::glue(baseURL1)
-        Sys.sleep(1)
-        jsonlite::read_json(url)$data$spdis[[1]]
-      },
-      error = function(e) {
-        warning("There was an error (1):")
-        warning(e)
-        warning("Trying to swap ref and alt")
-        Sys.sleep(1)
-        jsonlite::read_json(glue::glue(baseURL1_swapped))$data$spdis[[1]]
-      })
-      
-      #nolint (unused variable)
-      pos <- f$position
-      #nolint (unused variable)
-      seq_id <- f$seq_id
-      
-      baseURL2 <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{ref}:{alt}/rsids"
-      baseURL2_swapped <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{alt}:{ref}/rsids"
-      
-      id <- tryCatch({
+    baseURL1 <-
+      "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{r}/{a}/contextuals?assembly={assembly}"
+    baseURL2 <-
+      "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{r}:{a}/rsids"
+    
+    
+    tryCatch({
+      for (swapped in c(FALSE, TRUE)) {
+        if (swapped) {
+          r <- alt
+          a <- ref
+        } else {
+          a <- alt
+          r <- ref
+        }
+        
+        f <- tryCatch({
+          url <- glue::glue(baseURL1)
+          Sys.sleep(1)
+          jsonlite::read_json(url)$data$spdis[[1]]
+        },
+        warning = function(e) {
+          if (!swapped) {
+            message(glue::glue("Trying to swap ref and alt in "))
+            Sys.sleep(1)
+          } else{
+            warning(e)
+          }
+          NULL
+        })
+        if (is.null(f) && !swapped) {
+          next
+        }
+        
+        #nolint (unused variable)
+        pos <- f$position
+        
+        #nolint (unused variable)
+        seq_id <- f$seq_id
+        
         url <- glue::glue(baseURL2)
         Sys.sleep(1)
-        paste0("rs", jsonlite::read_json(url)$data$rsids[[1]])
-      },
-      error = function(e) {
-        warning("There was an error (2):")
-        warning(e)
-        warning("Trying to swap ref and alt")
-        url <- glue::glue(baseURL2_swapped)
-        Sys.sleep(1)
-        id <- jsonlite::read_json(url)$data$rsids[[1]]
-        glue::glue("rs{id}")
-      })
+        ret <-
+          paste0("rs", jsonlite::read_json(url)$data$rsids[[1]])
+        return(ret)
+      }
     },
     error = function(e) {
       warning(paste("there was an error:", e))
       NULL
     })
-    retVal
   }
 
 col_types <- readr::cols(
@@ -160,7 +167,7 @@ col_types <- readr::cols(
 #' @param assembly Which reference genome to use ("hg18", "hg19", or "hg38")
 #'
 #' @return an rsid identifier of the position provided
-#' 
+#'
 #' @keywords internal
 #' @export
 #'
@@ -179,7 +186,7 @@ get_cached_rsid_from_position <-
     CHR <- POS <- REF <- ALT <- NULL
     
     if (file.exists(cache_file)) {
-      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>% 
+      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>%
         subset(CHR == chrom &
                  POS == pos &
                  (REF == ref &
@@ -213,7 +220,7 @@ put_rsid_into_cache <-
     
     RSID <- CHR <- POS <- REF <- ALT <- NULL
     
-     
+    
     new_row = data.frame(
       RSID = rsid,
       CHR = chrom,
@@ -227,7 +234,6 @@ put_rsid_into_cache <-
     }
     
     if (!file.exists(cache_file)) {
-      
       readr::write_tsv(new_row, cache_file)
       return(FALSE)
     } else {
@@ -263,14 +269,15 @@ put_rsid_into_cache <-
 #' fixed_gwas = fill_gwas_unknown_rsids(demo_data)
 #' any(is.na(fixed_gwas$rsid)) # FALSE
 #' nrow(fixed_gwas) == nrow(demo_data) # TRUE
-#' 
 #'
-fill_gwas_unknown_rsids <- function(gwas, assembly = valid_references) {
-  assembly <- match.arg(assembly)
-  assert_gwas(gwas)
-  withIds <- get_unknown_rsids_from_locus(gwas, assembly)
-  merge_rsids_into_gwas(gwas, withIds)
-}
+#'
+fill_gwas_unknown_rsids <-
+  function(gwas, assembly = valid_references) {
+    assembly <- match.arg(assembly)
+    assert_gwas(gwas)
+    withIds <- get_unknown_rsids_from_locus(gwas, assembly)
+    merge_rsids_into_gwas(gwas, withIds)
+  }
 
 
 #' Method to obtain rsids for records in a gwas where they are missing
@@ -294,34 +301,35 @@ fill_gwas_unknown_rsids <- function(gwas, assembly = valid_references) {
 #' partial_gwas = get_unknown_rsids_from_locus(demo_data)
 #' any(is.na(partial_gwas$rsid)) # FALSE
 #' nrow(partial_gwas) == nrow(demo_data) # false
-#' 
 #'
-get_unknown_rsids_from_locus <- function(gwas, assembly = valid_references) {
-  assembly = match.arg(assembly)
-  assert_gwas(gwas)
-  assertthat::assert_that(assembly %in% valid_references)
-  
-  rsid <- CHR <- POS <- NEA <- EA <- NULL
-  
-  unknown_ids <- subset(
-    x = gwas,
-    subset = is.na(rsid),
-    select = c(CHR, POS, NEA, EA)
-  ) %>%plyr::mutate(assembly=assembly)
-  
-  ## this can take time and hits the API multiple times....
-  withIds <- plyr::adply(unknown_ids, 1, function(x) {
-    c(rsid = get_rsid(
-      chrom = x$CHR,
-      pos = x$POS,
-      ref = x$NEA,
-      alt = x$EA,
-      assembly = x$assembly
-    ))
-  }) %>% plyr::mutate(assembly=NULL)
-  
-  withIds
-}
+#'
+get_unknown_rsids_from_locus <-
+  function(gwas, assembly = valid_references) {
+    assembly = match.arg(assembly)
+    assert_gwas(gwas)
+    assertthat::assert_that(assembly %in% valid_references)
+    
+    rsid <- CHR <- POS <- NEA <- EA <- NULL
+    
+    unknown_ids <- subset(
+      x = gwas,
+      subset = is.na(rsid),
+      select = c(CHR, POS, NEA, EA)
+    ) %>% plyr::mutate(assembly = assembly)
+    
+    ## this can take time and hits the API multiple times....
+    withIds <- plyr::adply(unknown_ids, 1, function(x) {
+      c(rsid = get_rsid(
+        chrom = x$CHR,
+        pos = x$POS,
+        ref = x$NEA,
+        alt = x$EA,
+        assembly = x$assembly
+      ))
+    }) %>% plyr::mutate(assembly = NULL)
+    
+    withIds
+  }
 
 
 
@@ -329,13 +337,13 @@ get_unknown_rsids_from_locus <- function(gwas, assembly = valid_references) {
 #'
 #'
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
-#' @param rsids another gwas which contained a subset of the rows in gwas, presumably with 
-#' some rsids updated. 
+#' @param rsids another gwas which contained a subset of the rows in gwas, presumably with
+#' some rsids updated.
 #'
 #' @return original input gwas with available rsids replacing rsids where possible
 #' @export
 #'
-#' @keyword internal
+#' @keywords internal
 #' @examples
 #'
 #' any(is.na(demo_data$rsid)) # TRUE
@@ -344,7 +352,7 @@ get_unknown_rsids_from_locus <- function(gwas, assembly = valid_references) {
 #' nrow(fixed_partial_gwas) == nrow(demo_data) # FALSE
 #' fixed_gwas <- merge_rsids_into_gwas(demo_data, fixed_partial_gwas)
 #' nrow(fixed_gwas) == nrow(demo_data) # TRUE
-#' 
+#'
 merge_rsids_into_gwas <- function(gwas, rsids) {
   assert_gwas(gwas)
   assert_rsids(rsids)

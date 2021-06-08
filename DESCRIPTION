@@ -1,5 +1,5 @@
 Package: MRutils
-Version: 0.1.0.1
+Version: 0.2.0.0
 Date: 2021-05-14
 Title: Utility functions for preparing data for Two-Sample MR
 Authors@R: c(person("Yossi", "Farjoun", role = c("aut", "cre"),
@@ -35,5 +35,7 @@ Imports:
     methods,
     curry,
     here,
-    readr
+    readr,
+    digest,
+    yaml
 VignetteBuilder: knitr

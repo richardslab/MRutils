@@ -18,4 +18,16 @@ There are three options:
 docker run --rm -it -v $(pwd):/work richardslab/mr_utils:latest Rscript /work/relative/path/to/r/file -arg1 value1 -arg2 value2
 ```
 
+# invoking Rstudio
+In order to get Rstudio to "see" your conda environment you'll need to invoke it from within that environment. here's how to do it on a mac:
+
+```bash 
+cd MRutils
+conda activate MRutils
+export RSTUDIO_WHICH_R=`which R` ## this should be done 
+open -a RStudio
+```
+
+
+
 This is work in progress. please visit often.
