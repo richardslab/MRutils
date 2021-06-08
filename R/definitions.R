@@ -150,7 +150,7 @@ on_error_options = c("all", "none", "summary", "tell")
 #' @param on_error if data does _not_ validate, whether to show the reasons and whether to throw:
 #' all: show all the problems and throw an exception
 #' none: don't show anything, but throw an exception
-#' summary: show a summary and throw an expection
+#' summary: show a summary and throw an exception
 #' tell: just return TRUE if OK and FALSE if invalid
 #' 
 #' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
@@ -204,7 +204,7 @@ valid_references <- c("hg19", "hg18", "hg38")
 #' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
 #' all: show all the problems and throw an exception
 #' none: don't show anything, but throw an exception
-#' summary: show a summary and throw an expection
+#' summary: show a summary and throw an exception
 #' tell: just return TRUE if OK and FALSE if invalid
 #' 
 #' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
@@ -234,7 +234,7 @@ assert_gwas <-
 #' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
 #' all: show all the problems and throw an exception
 #' none: don't show anything, but throw an exception
-#' summary: show a summary and throw an expection
+#' summary: show a summary and throw an exception
 #' tell: just return TRUE if OK and FALSE if invalid
 #' 
 #' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
@@ -258,26 +258,29 @@ assert_rsids <-
 
 #' Check that input contains a CHR column with values that look like (human) contigs
 #'
+#' @name assert_chr
 #' @param data a dataframe that has a column CHR which will be validated
 #' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
 #' all: show all the problems and throw an exception
 #' none: don't show anything, but throw an exception
-#' summary: show a summary and throw an expection
+#' summary: show a summary and throw an exception
 #' tell: just return TRUE if OK and FALSE if invalid
 #' 
 #' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
-#'
 #' @export
-#'
 #' @examples
-#' assert_chr(data.frame(CHR=c("chr1","chr2"))) # TRUE
+#' 
 #' assert_chr(data.frame(CHR=c("1","2"))) # TRUE
 #' 
-#' assert_chr(data.frame(contig="1"),on_error='tell') # FALSE: column name needs to be "CHR"
-
-#'    # contigs should either all have "chr" or all not have it
+#' assert_chr(data.frame(contig="1"),on_error="tell") # FALSE: column name needs to be "CHR"
+#' 
+#' assert_chr(data.frame(CHR=c("chr1","chr2"))) # TRUE
+#' 
+#' # contigs should either all have "chr" or all not have it
 #' assert_chr(data.frame(CHR=c("1", "chr2")), on_error="tell") # FALSE 
-#' assert_chr(data.frame(CHR="hello"),on_error="tell") # FALSE  # value needs to be 1-22, X,Y or with "chr" prefix.
+#' 
+#' # value needs to be 1-22, X,Y or with "chr" prefix.
+#' assert_chr(data.frame(CHR="hello"),on_error="tell") # FALSE  
 #'}
 #'
 #'
@@ -291,7 +294,7 @@ assert_chr <- function(data, on_error = on_error_options)
 #' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
 #' all: show all the problems and throw an exception
 #' none: don't show anything, but throw an exception
-#' summary: show a summary and throw an expection
+#' summary: show a summary and throw an exception
 #' tell: just return TRUE if OK and FALSE if invalid
 #' 
 #' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")

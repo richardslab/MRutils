@@ -12,6 +12,7 @@ LazyData: true
 Suggests: 
     rmarkdown,
     knitr,
+    ggplot2,
     spelling,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
@@ -37,5 +38,6 @@ Imports:
     here,
     readr,
     digest,
-    yaml
+    yaml,
+    ggplot2
 VignetteBuilder: knitr

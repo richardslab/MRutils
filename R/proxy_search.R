@@ -1,11 +1,5 @@
 
 
-
-
-
-
-
-
 #' Find proxy snps to the list provided.
 #'
 #' function will keep a cache of previously obtained proxies in the results dir and only query
@@ -14,7 +8,7 @@
 #'
 #' @name get_proxies
 #'
-#' @param rsid a list of rsids (of snps) for which proxies are wanted.
+#' @param rsids a list of rsids (of snps) for which proxies are wanted.
 #' @param token a token to the ldlink nih service. default will look for an environment variable
 #' LDLINK_PROXY. If you need one go here: https://ldlink.nci.nih.gov/?tab=apiaccess
 #' @param population specify within which population you want to find proxies. E.g. "CEU", "YRI", etc. go
@@ -123,9 +117,11 @@ get_proxies <-
 
 
 
-#' Gets the LD between all the pairs of snps (that are in the same contig) from the set provbided by
+#' Gets the LD between all the pairs of snps (that are in the same contig) from the set provided by
 #' the input dataframe
-#'
+#' 
+#' @name get_LD_pairs
+#' 
 #' @param rsids_and_chr is a dataframe that contains (at least) the following two columns: CHR, rsid
 #' @param pop the population codes (or vector thereof) in which the LD is calculated e.g. c("CEU"), c("CEU","YRI")
 #' @param token is an access token to the nci API.
@@ -171,19 +167,18 @@ get_LD_pairs <- function(rsids_and_chr, pop, token) {
 
 
 
-#' method to remove ambiguous (palindromic and AF too close to 0.5) snps and select for the smallest pvalue within each "query_rsid":
+#' method to remove ambiguous (palindromic and AF too close to 0.5) SNPs and select for the smallest p-value within each "query_rsid":
 #'
-#' @param choose_best_proxies the dataframe containing results from LDprxy merged with an outcome gwas.
-#' The Alleles column is assumed to have been already "fixed" according to the "Correlated_Alleles" column.
-#' @param near_half_threshold The distance from AEF=0.5 that is to be considered "uimbiguous" when a palindromic SNP
+#' @param proxies_and_more the dataframe containing results from get_proxies merged with an outcome GWAS.
+#' The Alleles column is assumed to have been already "fixed" according to the "Correlated_Alleles" column (using fix_alleles).
+#' @param near_half_threshold The distance from AEF=0.5 that is to be considered "unimbiguous" when a palindromic SNP
 #' has it.
 #'
 #' @return The original dataframe, with palindromic SNPs removed and within each query_rsid only the one with the smallest
-#' P value retained. In the case of a tie, the one with the smallest distance to the query snp (located in POS.exp) will be
+#' P value retained. In the case of a tie, the one with the smallest distance to the query SNP (located in POS.exp) will be
 #' chosen. In the extremely rare case of a further tie, it will be broken randomly.
 #' @export
 #'
-#' @examples
 choose_best_proxies <-
   function(proxies_and_more, near_half_threshold = 0.08) {
     proxies_and_more$POS <- proxies_and_more$POS.exp
@@ -223,15 +218,15 @@ choose_best_proxies <-
 #'
 #' @name prune_snps
 #'
-#' @param data_with_rsids an input dataframe that includes columns rsid
-#' @param ld_pairs the result from calling get_LD_pairs matrix on the collection of rsids (and their contigs) in rsids_and_chr
+#' @param data_with_rsids an input dataframe that includes column rsid
+#' @param ld_pairs the result from calling get_LD_pairs matrix on the collection of rsids (and their contigs) in data_with_rsids
 #' @param r2_threshold the (r^2) threshold to use for considering two snps to be in LD
 #'
 #' @return a subset of the original dataframe, pruned according to some method....
 #' @export
 #'
 prune_snps <-
-  function(rsids_and_chr, ld_pairs, r2_threshold = 0.05) {
+  function(data_with_rsids, ld_pairs, r2_threshold = 0.05) {
     RS_number <- rsid <- value <- variable <- NULL
     
     LDpairs_culled <- ld_pairs
@@ -263,17 +258,19 @@ prune_snps <-
         )
     }
     
-    list(rsids = subset(rsids_and_chr, rsid %notin% removed),
+    list(rsids = subset(data_with_rsids, rsid %notin% removed),
          removed_rsid = removed)
   }
 
 
-#' Replaces the alleles in a gwas according to the replacement string provided.
+#' Replaces the alleles in a GWAS according to the replacement string provided.
 #'
 #' @name replace_alleles
 #'
-#' @param alleles
-#' @param replacement_String
+#' @param alleles a list of alleles that will be transformed according to the "rule" 
+#' in replacement_string
+#' @param replacement_string a set of replacement rules in the format "<CHAR_OLD>=<CHAR_NEW>,..."
+#' where the appearances of CHAR_OLD will be replaced by CHAR_NEW. 
 #'
 #' @keywords internal
 #' @export
@@ -366,11 +363,13 @@ fix_proxy_alleles <- function(proxies) {
 #' @export
 #'
 remove_linked_snps <-
-  function(merged_and_combined,
+  function(input_snps,
            pop,
            token = Sys.getenv("LDLINK_TOKEN"),
            prune_r2_threshold = 0.05) {
-    ld_pairs_raw <- get_LD_pairs(merged_and_combined, pop, token)
+    
+    variable <- RS_number <- value <- NULL
+    ld_pairs_raw <- get_LD_pairs(input_snps, pop, token)
     
     unique_rsids <-
       with(ld_pairs_raw, unique(c(
@@ -383,33 +382,35 @@ remove_linked_snps <-
     
     if (require(ggplot2)) {
       p <-
-        ggplot(ld_pairs) +  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable))
+        ggplot2::ggplot(ld_pairs) +  
+          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) + 
+          ggplot2::geom_bin2d(stat = 'identity', ggplot2::aes(x = RS_number, y = variable))
       
       raw_ld_plot <-
-        p + aes(fill = value) + labs(fill = expression(R ^ 2), parse = TRUE)
+        p + ggplot2::aes(fill = value) + ggplot2::labs(fill = expression(R ^ 2), parse = TRUE)
       thresholded_ld_plot <-
-        p + aes(fill = value > params$prune_r2_threshold) + labs(fill = expression(R ^
-                                                                                     2 > threshold), parse = TRUE)
+        p + ggplot2::aes(fill = value > params$prune_r2_threshold) + 
+            ggplot2::labs(fill = expression(R ^ 2 > threshold), parse = TRUE)
     }
     
     list_result <-
-      prune_snps(merged_and_combined, ld_pairs, prune_r2_threshold)
+      prune_snps(input_snps, ld_pairs, prune_r2_threshold)
     pruned_combined_snps <- list_result$rsids
     removed_rsids <- list_result$removed_rsid
     
     if (require(ggplot2)) {
-      pruned_ld_plot <- ggplot(ld_pairs) +
-        theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-        geom_bin2d(stat = 'identity', aes(x = RS_number, y = variable)) +
-        aes(
+      pruned_ld_plot <- ggplot2::ggplot(ld_pairs) +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) +
+        ggplot2::geom_bin2d(stat = 'identity', ggplot2::aes(x = RS_number, y = variable)) +
+        ggplot2::aes(
           fill = value > params$prune_r2_threshold,
           alpha = RS_number %in% removed_rsids |
             variable %in% removed_rsids
         ) +
-        labs(fill = expression(R ^ 2 > threshold),
+        ggplot2::labs(fill = expression(R ^ 2 > threshold),
              alpha = "variant removed",
              parse = TRUE) +
-        scale_alpha_manual(values = c(0.3, 1), breaks = c(TRUE, FALSE))
+        ggplot2::scale_alpha_manual(values = c(0.3, 1), breaks = c(TRUE, FALSE))
       
     }
     temp <- list(pruned = pruned_combined_snps,
