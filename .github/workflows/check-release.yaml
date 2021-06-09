@@ -22,7 +22,6 @@ jobs:
         with:
           r-version: '4.0.3' 
 
-
       - name: Query dependencies
         run: |
           install.packages('remotes')

@@ -33,7 +33,6 @@ Imports:
     validate,
     assertthat,
     methods,
-    curry,
     here,
     readr,
     digest,
