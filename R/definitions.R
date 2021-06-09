@@ -281,7 +281,7 @@ assert_rsids <-
 #' 
 #' # value needs to be 1-22, X,Y or with "chr" prefix.
 #' assert_chr(data.frame(CHR="hello"),on_error="tell") # FALSE  
-#'}
+#'
 #'
 #'
 assert_chr <- function(data, on_error = on_error_options)

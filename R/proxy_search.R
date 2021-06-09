@@ -128,7 +128,10 @@ get_proxies <-
 #' if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess
 #'
 #'
-#' @return
+#' @return a dataframe containing the following columns: CHR, RS_number, variable, value where
+#' CHR is the contig on which the snps are
+#' RS_number and variable are the two snps being compared and
+#' value is the R^2 value between them
 #' 
 #' @export
 #'
@@ -168,7 +171,8 @@ get_LD_pairs <- function(rsids_and_chr, pop, token) {
 
 
 #' method to remove ambiguous (palindromic and AF too close to 0.5) SNPs and select for the smallest p-value within each "query_rsid":
-#'
+#' @name choose_best_proxies
+#' 
 #' @param proxies_and_more the dataframe containing results from get_proxies merged with an outcome GWAS.
 #' The Alleles column is assumed to have been already "fixed" according to the "Correlated_Alleles" column (using fix_alleles).
 #' @param near_half_threshold The distance from AEF=0.5 that is to be considered "unimbiguous" when a palindromic SNP
@@ -337,12 +341,12 @@ replace_alleles <- function(alleles, replacement_string) {
 #'                                                   "A=T,G=C")))
 #'
 fix_proxy_alleles <- function(proxies) {
+  . <- NULL
+  
   fixed_proxies_with_exposure <- plyr::adply(proxies, 1, function(x) {
     replace_alleles(list(x$EA, x$NEA), x$Correlated_Alleles) %>%
     {
-      # print(.[1]);
-      # print(.[2]);
-      data.frame(EA = .[1],
+      data.frame(EA  = .[1],
                  NEA = .[2])
     }
   })
@@ -357,9 +361,9 @@ fix_proxy_alleles <- function(proxies) {
 #' @param pop the population codes (or vector thereof) in which the LD is calculated e.g. c("CEU"), c("CEU","YRI")
 #' @param token is an access token to the nci API.
 #' if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess
-#' @param prune_r2_threshold a threshold (in LD r^2) for two snps to be considered "close"
+#' @param prune_r2_threshold a threshold (in LD r^2) for two SNPs to be considered "close"
 #'
-#' @return a list with the pruned dataframe, the list of removed snps, and three plots (if ggplot2 is available)
+#' @return a list with the pruned dataframe, the list of removed SNPs, and three plots (if ggplot2 is available)
 #' @export
 #'
 remove_linked_snps <-
@@ -380,7 +384,7 @@ remove_linked_snps <-
       RS_number = factor(RS_number, levels = unique_rsids)
     )
     
-    if (require(ggplot2)) {
+    if (requireNamespace("ggplot2",quietly = TRUE)) {
       p <-
         ggplot2::ggplot(ld_pairs) +  
           ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) + 
@@ -389,7 +393,7 @@ remove_linked_snps <-
       raw_ld_plot <-
         p + ggplot2::aes(fill = value) + ggplot2::labs(fill = expression(R ^ 2), parse = TRUE)
       thresholded_ld_plot <-
-        p + ggplot2::aes(fill = value > params$prune_r2_threshold) + 
+        p + ggplot2::aes(fill = value > prune_r2_threshold) + 
             ggplot2::labs(fill = expression(R ^ 2 > threshold), parse = TRUE)
     }
     
@@ -398,12 +402,12 @@ remove_linked_snps <-
     pruned_combined_snps <- list_result$rsids
     removed_rsids <- list_result$removed_rsid
     
-    if (require(ggplot2)) {
+    if (requireNamespace("ggplot2",quietly = TRUE)) {
       pruned_ld_plot <- ggplot2::ggplot(ld_pairs) +
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) +
         ggplot2::geom_bin2d(stat = 'identity', ggplot2::aes(x = RS_number, y = variable)) +
         ggplot2::aes(
-          fill = value > params$prune_r2_threshold,
+          fill = value > prune_r2_threshold,
           alpha = RS_number %in% removed_rsids |
             variable %in% removed_rsids
         ) +
@@ -416,7 +420,7 @@ remove_linked_snps <-
     temp <- list(pruned = pruned_combined_snps,
                  removed_rsids = removed_rsids)
     
-    if (require(ggplot2)) {
+    if (requireNamespace("ggplot2",quietly = TRUE)) {
       temp$raw_plot <- raw_ld_plot
       temp$thresholded_plot <- thresholded_ld_plot
       temp$pruned_plot <- pruned_ld_plot
