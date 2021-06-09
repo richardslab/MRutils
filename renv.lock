@@ -176,6 +176,13 @@
       "Repository": "CRAN",
       "Hash": "4f57884290cc75ab22f4af9e9d4ca862"
     },
+    "argparse": {
+      "Package": "argparse",
+      "Version": "2.0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "516a3e2104cf2eace9f5d2ad5c7badb3"
+    },
     "arrangements": {
       "Package": "arrangements",
       "Version": "1.1.9",
@@ -420,6 +427,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "77bd60a6157420d4ffa93b27cf6a58b8"
+    },
+    "findpython": {
+      "Package": "findpython",
+      "Version": "1.0.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "73cb09f8220dfed388bd89d180f0b922"
     },
     "forcats": {
       "Package": "forcats",

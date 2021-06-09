@@ -42,18 +42,26 @@ valid_contigs <- c(1:22, "X", "Y")
 valid_contigs_with_chr <- paste0("chr", valid_contigs)
 
 
+#' contig validator
+#' @name chr_validator
+#' @keywords internal
+#'
+chr_validator <-
+  validate::validator(
+  chr_is_valid = CHR %in% valid_contigs |
+    all(CHR %in% valid_contigs_with_chr),
+  chr_is_valid_with_chr = CHR %in% valid_contigs_with_chr |
+    all(CHR %in% valid_contigs))
+
+
 #' locus information validator
 #' @name locus_validator
 #' @keywords internal
 #'
 locus_validator <-
   validate::validator(
-    chr_is_valid = CHR %in% valid_contigs |
-      all(CHR %in% valid_contigs_with_chr),
-    chr_is_valid_with_chr = CHR %in% valid_contigs_with_chr |
-      all(CHR %in% valid_contigs),
     pos_is_positive = POS > 0
-  )
+  ) + chr_validator
 
 
 #' rsid information validator
@@ -111,13 +119,14 @@ stats_validator <- validate::validator(
 #' @name proxy_stats_validator
 #' @keywords internal
 proxy_stats_validator <- validate::validator(
-  MAF_is_prob = in_range(MAF, min = 0, 1, strict = FALSE),
-  R2_is_prob = in_range(Rs, 0, 1, strict = FALSE)
+  # MAF_is_prob = in_range(MAF, min = 0, 1, strict = FALSE),
+  R2_is_prob = in_range(R2, 0, 1, strict = FALSE)
 )
 
 
 proxy_validator <-
   rsid_validator + locus_validator + proxy_stats_validator
+
 
 #' locus information validator
 #' @name gwas_validator
@@ -129,6 +138,8 @@ gwas_validator <-
   stats_validator
 
 
+on_error_options = c("all", "none", "summary", "tell")
+
 #' Check that input is a dataframe that validates according to the validator and optionally
 #' show which data doesn't validate
 #'
@@ -136,83 +147,97 @@ gwas_validator <-
 #'
 #' @param data a dataframe which will be validated against the validator
 #' @param validator a validator against which to validate the data
-#' @param show_error if data does _not_ validate, whether to show the reasons
+#' @param on_error if data does _not_ validate, whether to show the reasons and whether to throw:
+#' all: show all the problems and throw an exception
+#' none: don't show anything, but throw an exception
+#' summary: show a summary and throw an exception
+#' tell: just return TRUE if OK and FALSE if invalid
+#' 
+#' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
 #'
 #' @export
 #'
 assert_valid_data <-
   function(data,
            validator,
-           show_error = c("all", "none", "summ")) {
-    show_error <- match.arg(show_error)
+           on_error = on_error_options) {
+    on_error <- match.arg(on_error)
     df <- as.data.frame(data)
     val_sum <-
       validate::summary(validate::confront(df, validator))
     
     if (any(val_sum$error) || any(val_sum$fails > 0)) {
+      if (on_error=="tell") return (FALSE)
+      
       fails <- error <- NULL
       
-      if (show_error == "all" || show_error == "summ") {
+      if (on_error == "all" || on_error == "summary") {
         methods::show(subset(val_sum, fails != 0 | error))
       }
-      if (show_error == "all") {
+      if (on_error == "all") {
         methods::show(validate::violating(df, validator))
         methods::show(validate::errors(df, validator))
         
       }
       assertthat::assert_that(FALSE, "There's a problem with the data")
+    } else {
+      return(TRUE)
     }
-    
-    invisible(TRUE)
   }
 
 
-
 #' List of human reference builds that can be used to find rsids
-#'
+#' 
+#' the order matters...the first one is the default value for methods that 
+#' need assembly as input.
+#' 
 #' @name valid_references
 #' @keywords internal
-valid_references <- c("hg18", "hg19", "hg38")
+#' @export
+valid_references <- c("hg19", "hg18", "hg38")
 
 #' Validate a dataframe as a gwas
 #'
 #' Validate that a dataframe contains values that are consistent with being a gwas.
 #'
 #' @param data input data, a dataframe
-#' @param show_error if data does _not_ validate, which errors to show (all, none, or summary)
+#' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
+#' all: show all the problems and throw an exception
+#' none: don't show anything, but throw an exception
+#' summary: show a summary and throw an exception
+#' tell: just return TRUE if OK and FALSE if invalid
+#' 
+#' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
 #' @export
 #' @examples
 #'
 #'  assert_gwas(demo_data) # TRUE
 #'
-#'  #TODO: add demo data with Rmpfr
+#'  broken_data <- demo_data # make copy
+#'  broken_data$POS[1] <- 0 # Zero is not a valid value for POS
+#'  assert_gwas(broken_data, on_error="tell") # FALSE
 #'
-#'  \dontrun{
-#'     broken_data <- demo_data # make copy
-#'     broken_data$POS[1] <- 0 # Zero is not a valid value for POS
-#'     assert_gwas(broken_data, show_error=TRUE) # NOT OK. Will error.
-#'  }
-#'
-#'
-
 assert_gwas <-
-  function(data, show_error = c("all", "none", "summ")) {
-    show_error <- match.arg(show_error)
-    assert_valid_data(data, gwas_validator, show_error)
+  function(data, on_error = on_error_options) {
+    on_error <- match.arg(on_error)
+    assert_valid_data(data, gwas_validator, on_error) &&
     assert_valid_data(data, gwas_types_validator,
-                      if (show_error == "all")
-                        "summ"
+                      if (on_error == "all")
+                        "summary"
                       else
-                        show_error)
+                        on_error)
   }
 
-#' Check that input is a vector of strings that look like rsids
+#' Check that input contains an rsid column with values that look like rsids
 #'
 #' @param data a dataframe that has a column rsid which will be validated
-#' @param show_error if data does _not_ validate, which errors to show
-#'
-#'
-#' @return TRUE if valid, will throw a validation error is invalid
+#' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
+#' all: show all the problems and throw an exception
+#' none: don't show anything, but throw an exception
+#' summary: show a summary and throw an exception
+#' tell: just return TRUE if OK and FALSE if invalid
+#' 
+#' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
 #'
 #'
 #' @export
@@ -222,23 +247,57 @@ assert_gwas <-
 #' assert_rsids(data.frame(rsid=c("rs001101"))) # TRUE
 #' assert_rsids(data.frame(rsid="rs001101")) # TRUE
 #'
-#' \dontrun{
-#'    assert_rsids(data.frame(rsid=c("001101","rs00042"))) ## error
-#' }
+#' assert_rsids(data.frame(rsid=c("001101","rs00042")), on_error="tell") # FALSE 
+#' 
 #'
 #'
 assert_rsids <-
-  function(data, show_error = c("all", "none", "summ"))
-    assert_valid_data(data, validator = rsid_validator, show_error)
+  function(data, on_error = on_error_options)
+    assert_valid_data(data, validator = rsid_validator, on_error)
+
+
+#' Check that input contains a CHR column with values that look like (human) contigs
+#'
+#' @name assert_chr
+#' @param data a dataframe that has a column CHR which will be validated
+#' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
+#' all: show all the problems and throw an exception
+#' none: don't show anything, but throw an exception
+#' summary: show a summary and throw an exception
+#' tell: just return TRUE if OK and FALSE if invalid
+#' 
+#' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
+#' @export
+#' @examples
+#' 
+#' assert_chr(data.frame(CHR=c("1","2"))) # TRUE
+#' 
+#' assert_chr(data.frame(contig="1"),on_error="tell") # FALSE: column name needs to be "CHR"
+#' 
+#' assert_chr(data.frame(CHR=c("chr1","chr2"))) # TRUE
+#' 
+#' # contigs should either all have "chr" or all not have it
+#' assert_chr(data.frame(CHR=c("1", "chr2")), on_error="tell") # FALSE 
+#' 
+#' # value needs to be 1-22, X,Y or with "chr" prefix.
+#' assert_chr(data.frame(CHR="hello"),on_error="tell") # FALSE  
+#'
+#'
+#'
+assert_chr <- function(data, on_error = on_error_options)
+  assert_valid_data(data, validator = chr_validator, on_error)
 
 
 #' Check that input is a vector of strings that look like rsids
 #'
 #' @param data a dataframe that has a column rsid which will be validated
-#' @param show_error if data does _not_ validate, which errors to show
-#'
-#'
-#' @return TRUE if valid, will throw a validation error is invalid
+#' @param on_error  if data does _not_ validate, whether to show the reasons and whether to throw:
+#' all: show all the problems and throw an exception
+#' none: don't show anything, but throw an exception
+#' summary: show a summary and throw an exception
+#' tell: just return TRUE if OK and FALSE if invalid
+#' 
+#' @return TRUE if data is valid and FALSE if invalid (only when "on_error" == "tell")
 #'
 #'
 #' @export
@@ -248,22 +307,22 @@ assert_rsids <-
 #' assert_rsids(data.frame(rsid=c("rs001101"))) # TRUE
 #' assert_rsids(data.frame(rsid="rs001101")) # TRUE
 #'
-#' \dontrun{
-#'    assert_rsids(data.frame(rsid=c("001101","rs00042"))) ## error
-#' }
+#'
+#'assert_rsids(data.frame(rsid=c("001101","rs00042")),on_error="tell") ## FALSE
+#' 
 #'
 #'
 assert_probabilities <-
-  function(data, show_error = c("all", "none", "summ"))
-    assert_valid_data(data, validator = stats_validator, show_error)
+  function(data, on_error = on_error_options)
+    assert_valid_data(data, validator = stats_validator, on_error)
 
 # this asserts that a data.frame has the right columns for proxies
 assert_proxies <-
-  function(data, show_error = c("all", "none", "summ"))
-    assert_valid_data(data, validator = proxy_validator, show_error)
+  function(data, on_error = on_error_options)
+    assert_valid_data(data, validator = proxy_validator, on_error)
 
 
-# this asserts that a list of values "looks like" probabiilities 
+# this asserts that a list of values "looks like" probabilities 
 assert_probability <- function(p) {
   assertthat::assert_that(all(p <= 1))
   assertthat::assert_that(all(0 <= p))

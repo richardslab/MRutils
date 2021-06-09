@@ -6,6 +6,9 @@ dependencies:
   - python=3.6
   - bioconda::tabix
   - gfortran_linux-64 #{{linux-only}}
+  - clangxx_osx-64 #{{osx-only}}
+  - libcurl #{{osx-only}}
+  - ghostscript
   - gmp
   - libgit2 #{{osx-only}}
   - rstudio #{{osx-only}}

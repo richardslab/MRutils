@@ -14,15 +14,15 @@ test_that("can get_rsid_from_position with chr", {
                "rs10760259")
 })
 
+
 test_that("get_rsid_from_position warns appropriately", {
   expect_warnings(val <-
-                    get_rsid_from_position("chr9", 125711603, "A", "C"), 3)
+                    get_rsid_from_position("chr9", 1257116033, "A", "C"), 2)
   expect_equal(val, NULL)
   
   expect_warnings(val <-
-                    get_rsid_from_position("9", 125711603, "T", "C"), 3)
+                    get_rsid_from_position("9", 125711603, "T", "C"), 2)
   expect_equal(val, NULL)
-  
 })
 
 

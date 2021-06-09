@@ -2,30 +2,57 @@
 
 
 
+#' Get rsid name from position
+#'
+#' This method combines the cached and API version of get_rsid
+#'
+#' @param chrom The name of the contig for the SNP
+#' @param pos The (1-based) position of the SNP
+#' @param ref The reference allele (only SNPs are supported)
+#' @param alt The alternate allele (only SNPs are supported)
+#' @param assembly Which reference genome to use ("hg18", "hg19", or "hg38")
+#' @param cache_file Which file to use for caching results. if NULL will not use cache
+#' @param update_cache A boolean indicating whether to update the cache results.
+#'
+#' @return an rsid identifier of the position provided
+#'
+#' @keywords internal
+#' @export
+#'
+#' @examples
+#'
+#'get_rsid("9", 125711603, "C", "A") # "rs10760259"
+#'get_rsid("9", 136155000, "T", "C") # "rs635634"
+#'get_rsid("9", 136155000, "C", "T") # "rs635634"
+#'
+#'
 get_rsid <-
   function(chrom,
            pos,
            ref,
            alt,
-           assembly = "hg19",
+           assembly = valid_references,
            cache_file = NULL,
            update_cache = TRUE) {
     #try cache?
+    assembly <- match.arg(assembly)
     try_cache <- is.null(cache_file) || file.exists(cache_file)
     update_cache <- try_cache && update_cache
     
     rsid = NULL
     if (try_cache) {
+      print(glue::glue("getting cached rsid for {chrom}:{pos}"))
       rsid = get_cached_rsid_from_position(chrom, pos, ref, alt, assembly = "hg19")
     }
     
     if (is.null(rsid)) {
+      print(glue::glue("getting fresh rsid for {chrom}:{pos}"))
       rsid = get_rsid_from_position(chrom, pos, ref, alt, assembly = "hg19")
     } else {
       update_cache = FALSE
     }
     if (!is.null(rsid) && update_cache) {
-      cat(glue::glue("writing rsid to cache {rsid}\n"))
+      print(glue::glue("writing rsid to cache {rsid}"))
       Sys.sleep(1)
       put_rsid_into_cache(rsid, chrom, pos, ref, alt, assembly, cache_file)
     }
@@ -51,11 +78,14 @@ get_rsid <-
 #' @examples
 #'
 #'get_rsid_from_position("9", 125711603,	"C",	"A") # "rs10760259"
+#'get_rsid_from_position("9", 136155000, "T", "C") # "rs635634"
+#'get_rsid_from_position("9", 136155000, "C", "T") # "rs635634"
 #'
 #'
 #'
 get_rsid_from_position <-
-  function(chrom, pos, ref, alt, assembly = "hg19") {
+  function(chrom, pos, ref, alt, assembly = valid_references) {
+    assembly <- match.arg(assembly)
     assertthat::assert_that(assembly %in% valid_references)
     assertthat::assert_that(chrom %in% valid_contigs |
                               chrom %in% valid_contigs_with_chr)
@@ -63,55 +93,57 @@ get_rsid_from_position <-
     assertthat::assert_that(alt %in% valid_alleles)
     assertthat::assert_that(pos > 0)
     
-    retVal <- tryCatch({
-      baseURL1 <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{ref}/{alt}/contextuals?assembly={assembly}"
-      baseURL1_swapped <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{alt}/{ref}/contextuals?assembly={assembly}"
-      
-      f <- tryCatch({
-        url <- glue::glue(baseURL1)
-        Sys.sleep(1)
-        jsonlite::read_json(url)$data$spdis[[1]]
-      },
-      error = function(e) {
-        warning("There was an error (1):")
-        warning(e)
-        warning("Trying to swap ref and alt")
-        Sys.sleep(1)
-        jsonlite::read_json(glue::glue(baseURL1_swapped))$data$spdis[[1]]
-      })
-      
-      #nolint (unused variable)
-      pos <- f$position
-      #nolint (unused variable)
-      seq_id <- f$seq_id
-      
-      baseURL2 <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{ref}:{alt}/rsids"
-      baseURL2_swapped <-
-        "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{alt}:{ref}/rsids"
-      
-      id <- tryCatch({
+    baseURL1 <-
+      "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{r}/{a}/contextuals?assembly={assembly}"
+    baseURL2 <-
+      "https://api.ncbi.nlm.nih.gov/variation/v0/spdi/{seq_id}:{pos}:{r}:{a}/rsids"
+    
+    
+    tryCatch({
+      for (swapped in c(FALSE, TRUE)) {
+        if (swapped) {
+          r <- alt
+          a <- ref
+        } else {
+          a <- alt
+          r <- ref
+        }
+        
+        f <- tryCatch({
+          url <- glue::glue(baseURL1)
+          Sys.sleep(1)
+          jsonlite::read_json(url)$data$spdis[[1]]
+        },
+        warning = function(e) {
+          if (!swapped) {
+            message(glue::glue("Trying to swap ref and alt in "))
+            Sys.sleep(1)
+          } else{
+            warning(e)
+          }
+          NULL
+        })
+        if (is.null(f) && !swapped) {
+          next
+        }
+        
+        #nolint (unused variable)
+        pos <- f$position
+        
+        #nolint (unused variable)
+        seq_id <- f$seq_id
+        
         url <- glue::glue(baseURL2)
         Sys.sleep(1)
-        paste0("rs", jsonlite::read_json(url)$data$rsids[[1]])
-      },
-      error = function(e) {
-        warning("There was an error (2):")
-        warning(e)
-        warning("Trying to swap ref and alt")
-        url <- glue::glue(baseURL2_swapped)
-        Sys.sleep(1)
-        id <- jsonlite::read_json(url)$data$rsids[[1]]
-        glue::glue("rs{id}")
-      })
+        ret <-
+          paste0("rs", jsonlite::read_json(url)$data$rsids[[1]])
+        return(ret)
+      }
     },
     error = function(e) {
       warning(paste("there was an error:", e))
       NULL
     })
-    retVal
   }
 
 col_types <- readr::cols(
@@ -135,7 +167,7 @@ col_types <- readr::cols(
 #' @param assembly Which reference genome to use ("hg18", "hg19", or "hg38")
 #'
 #' @return an rsid identifier of the position provided
-#' 
+#'
 #' @keywords internal
 #' @export
 #'
@@ -144,8 +176,9 @@ get_cached_rsid_from_position <-
            pos,
            ref,
            alt,
-           assembly = "hg19",
+           assembly = valid_references,
            cache = NULL) {
+    assembly <- match.arg(assembly)
     if (is.null(cache)) {
       cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
     }
@@ -153,7 +186,7 @@ get_cached_rsid_from_position <-
     CHR <- POS <- REF <- ALT <- NULL
     
     if (file.exists(cache_file)) {
-      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>% 
+      cached = readr::read_tsv(cache_file, col_types = col_types, progress = FALSE) %>%
         subset(CHR == chrom &
                  POS == pos &
                  (REF == ref &
@@ -178,15 +211,16 @@ put_rsid_into_cache <-
            pos,
            ref,
            alt,
-           assembly = "hg19",
+           assembly = valid_references,
            cache = NULL) {
+    assembly <- match.arg(assembly)
     if (is.null(cache)) {
       cache_file = here::here(glue::glue("cache/{assembly}.dbSNP"))
     }
     
     RSID <- CHR <- POS <- REF <- ALT <- NULL
     
-     
+    
     new_row = data.frame(
       RSID = rsid,
       CHR = chrom,
@@ -200,7 +234,6 @@ put_rsid_into_cache <-
     }
     
     if (!file.exists(cache_file)) {
-      
       readr::write_tsv(new_row, cache_file)
       return(FALSE)
     } else {
@@ -220,9 +253,10 @@ put_rsid_into_cache <-
 #' Method to obtain rsids for records in a gwas where they are missing
 #'
 #' The method looks at all the rows for which rsid is NA and gets their rsid by
-#' calling merge_rsids_into_gwas and merging the resulting rsids into the gwas
+#' calling get_unknown_rsids_from_locus and merging the resulting rsids into the gwas
+#' using merge_rsids_into_gwas
 #'
-#'
+#' @name fill_gwas_unknown_rsids
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
 #' @param assembly one of "hg18", "hg19" (default), "hg38".
 #'
@@ -232,35 +266,93 @@ put_rsid_into_cache <-
 #' @examples
 #'
 #' any(is.na(demo_data$rsid)) # TRUE
-#' fixed_gwas = get_unknown_rsids_from_locus(demo_data)
+#' fixed_gwas = fill_gwas_unknown_rsids(demo_data)
 #' any(is.na(fixed_gwas$rsid)) # FALSE
+#' nrow(fixed_gwas) == nrow(demo_data) # TRUE
 #'
-get_unknown_rsids_from_locus <- function(gwas, assembly = "hg19") {
-  assert_gwas(gwas)
-  assertthat::assert_that(assembly %in% valid_references)
-  
-  rsid <- CHR <- POS <- NEA <- EA <- NULL
-  
-  unknown_ids <- subset(
-    x = gwas,
-    subset = is.na(rsid),
-    select = c(CHR, POS, NEA, EA)
-  ) %>% transform(assembly = assembly)
-  
-  ## this can take time and hits the API multiple times....
-  withIds <- plyr::adply(unknown_ids, 1, function(x) {
-    c(rsid = get_rsid(
-      chrom = x$CHR,
-      pos = x$POS,
-      ref = x$NEA,
-      alt = x$EA,
-      assembly = x$assembly
-    ))
-  })
-  withIds
-}
+#'
+fill_gwas_unknown_rsids <-
+  function(gwas, assembly = valid_references) {
+    assembly <- match.arg(assembly)
+    assert_gwas(gwas)
+    withIds <- get_unknown_rsids_from_locus(gwas, assembly)
+    merge_rsids_into_gwas(gwas, withIds)
+  }
 
 
+#' Method to obtain rsids for records in a gwas where they are missing
+#'
+#' The method looks at all the rows for which rsid is NA and gets their rsid by
+#' calling merge_rsids_into_gwas and merging the resulting rsids into the gwas
+#'
+#'
+#' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
+#' @param assembly one of "hg18", "hg19" (default), "hg38".
+#'
+#' @return subset of input gwas with available rsids replacing rsids where they were originally missing. Does
+#' not include all the columns in the original gwas, only CHR, POS, NEA, EA, rsid
+#' @export
+#' @keywords internal
+#'
+#'
+#' @examples
+#'
+#' any(is.na(demo_data$rsid)) # TRUE
+#' partial_gwas = get_unknown_rsids_from_locus(demo_data)
+#' any(is.na(partial_gwas$rsid)) # FALSE
+#' nrow(partial_gwas) == nrow(demo_data) # false
+#'
+#'
+get_unknown_rsids_from_locus <-
+  function(gwas, assembly = valid_references) {
+    assembly = match.arg(assembly)
+    assert_gwas(gwas)
+    assertthat::assert_that(assembly %in% valid_references)
+    
+    rsid <- CHR <- POS <- NEA <- EA <- NULL
+    
+    unknown_ids <- subset(
+      x = gwas,
+      subset = is.na(rsid),
+      select = c(CHR, POS, NEA, EA)
+    ) %>% plyr::mutate(assembly = assembly)
+    
+    ## this can take time and hits the API multiple times....
+    withIds <- plyr::adply(unknown_ids, 1, function(x) {
+      c(rsid = get_rsid(
+        chrom = x$CHR,
+        pos = x$POS,
+        ref = x$NEA,
+        alt = x$EA,
+        assembly = x$assembly
+      ))
+    }) %>% plyr::mutate(assembly = NULL)
+    
+    withIds
+  }
+
+
+
+#' Method to merge back rsids from a subset of a gwas into a full gwas where they were missing
+#'
+#'
+#' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
+#' @param rsids another gwas which contained a subset of the rows in gwas, presumably with
+#' some rsids updated.
+#'
+#' @return original input gwas with available rsids replacing rsids where possible
+#' @export
+#'
+#' @keywords internal
+#' @examples
+#'
+#' any(is.na(demo_data$rsid)) # TRUE
+#' fixed_partial_gwas <- get_unknown_rsids_from_locus(demo_data)
+#' any(is.na(fixed_partial_gwas$rsid)) # FALSE
+#' nrow(fixed_partial_gwas) == nrow(demo_data) # FALSE
+#' fixed_gwas <- merge_rsids_into_gwas(demo_data, fixed_partial_gwas)
+#' nrow(fixed_gwas) == nrow(demo_data) # TRUE
+#'
 merge_rsids_into_gwas <- function(gwas, rsids) {
   assert_gwas(gwas)
   assert_rsids(rsids)
