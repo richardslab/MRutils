@@ -1,9 +1,12 @@
 
-
 #' Find proxy snps to the list provided.
 #'
-#' function will keep a cache of previously obtained proxies in the results dir and only query
-#' snps that are not cached. A token for the service is required, please get one at https://ldlink.nci.nih.gov/?tab=apiaccess
+#' function will keep a cache of previously queried proxies in the results dir and only query
+#' snps that are not cached. This includes rsids that errored. in that case, an empty file will be
+#' stored in the cache directory and the snp will be skipped in a subsequent call. Note that network errors
+#' may cause empty files to erroneously indicate that a snp has no rsID.
+#'
+#' A token for the service is required, please get one at https://ldlink.nci.nih.gov/?tab=apiaccess
 #'
 #'
 #' @name get_proxies
@@ -20,12 +23,27 @@
 #' @export
 #'
 #'
+#' @examples
 #'
+#' \dontrun{ #because it needs a token.
+#' # If one does `Sys.setenv(LDLINK_TOKEN=<Your token here>)` first, this will work
+#'
+#' get_proxies("rs2495477", pop="CEU", results_dir="derived_data")  #returns one proxy
+#' get_proxies("rs373780327", pop="CEU", results_dir="derived_data") #returns no proxies
+#'
+#' get_proxies(c("rs2495477","rs373780327"), pop="CEU", results_dir="derived_data")  #returns one proxy
+#' get_proxies(c(), pop="CEU", results_dir="derived_data")  #returns no proxy (empty list!)
+#'
+#' # note that thanks to the cache, calling either of these a second time will result in an immediate
+#' # return value
+#'
+#'
+#'}
 get_proxies <-
   function(rsids,
            token = Sys.getenv("LDLINK_TOKEN"),
            population,
-           results_dir,
+           results_dir = NULL,
            skip_api = FALSE,
            r2_threshold = 0.9) {
     config = list(pop = population, r2_thresh = r2_threshold)
@@ -50,27 +68,45 @@ get_proxies <-
         setdiff(rsids, gsub("\\.txt$", "", raw_rs_files))
       
       # this takes time and hits the LDlink API.
-      if (length(missing_rsids) > 0) {
-        if (!skip_api) {
-          LDlinkR::LDproxy_batch(
-            missing_rsids,
-            pop = population,
-            r2d = "r2",
-            append = F,
-            token = token
-          )
-          rsFiles <-
-            Filter(function(x)
-              file.info(x)$size > 1000,
-              dir(".", "^rs[0-9]*\\.txt"))
-        } else {
-          warning(
-            glue::glue(
-              "Not calling the LDproxy api, but there are some missing rsids in the results dir:{missing_rsids}"
+      if (!skip_api) {
+        future::plan(future::multisession())
+        future.apply::future_lapply(missing_rsids, function(missing_rsid) {
+          print(glue::glue("looking for proxies for {missing_rsids}"))
+          myfile <- paste0(missing_rsid, ".txt")
+          df_proxy <-
+            LDlinkR::LDproxy(
+              snp = missing_rsid,
+              pop = population,
+              r2d = "r2",
+              token = token
             )
+          if (!(grepl("error", df_proxy[1, 1]))) {
+            utils::write.table(
+              df_proxy,
+              file = myfile,
+              append = FALSE,
+              quote = FALSE,
+              row.names = TRUE,
+              sep = "\t"
+            )
+          } else{
+            system(glue::glue("touch {myfile}"))
+          }
+        })
+        
+        
+        rsFiles <-
+          Filter(function(x)
+            file.info(x)$size > 1000,
+            dir(".", "^rs[0-9]*\\.txt"))
+      } else if (length(missing_rsids) > 0) {
+        warning(
+          glue::glue(
+            "Not calling the LDproxy api, but there are some missing rsids in the results dir:{missing_rsids}"
           )
-        }
+        )
       }
+      
       
       
       R2 <-
@@ -87,15 +123,17 @@ get_proxies <-
                      grepl("([ACGT]/[ACGT])", x = Alleles))) %>%
         dplyr::mutate(rsid = RS_Number, Locus = Coord) %>%
         subset(query_rsid %in% rsids) %>%
-        dplyr::select(c(
-          -"Distance",
-          -"Dprime",
-          -"RegulomeDB",
-          -"Function",
-          -"RS_Number",
-          -"Coord",
-          -"MAF"
-        )) %>%
+        dplyr::select(
+          c(
+            -"Distance",
+            -"Dprime",
+            -"RegulomeDB",
+            -"Function",
+            -"RS_Number",
+            -"Coord",
+            -"MAF"
+          )
+        ) %>%
         dplyr::mutate(
           CHR = gsub(
             pattern = "^chr",
@@ -114,7 +152,6 @@ get_proxies <-
     assert_proxies(proxies)
     proxies
   }
-
 
 
 #' Gets the LD between all the pairs of snps (that are in the same contig) from the set provided by

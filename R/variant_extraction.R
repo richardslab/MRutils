@@ -17,6 +17,8 @@
 #' to a dataframe that will be sanity-checked as being a gwas.
 #' @param validate a boolean indicating whether to validate the resulting gwas 
 #' (after applying the mapping function) (TRUE by default) use FALSE for debugging.
+#' @param add_chr a boolean indicating whether to add "chr" to the names of the contigs in the 
+#' query snps. This is because LDLink 
 #' 
 #' @return a gwas containing the subset of the outcome file that was requested.
 #'  The first non-commented line will be assumed to be the header line. It will be
@@ -46,12 +48,15 @@ extract_snps_from_bgzip <-
            snps,
            mapping_function = identity,
            comment_char = "",
-           validate = TRUE) {
+           validate = TRUE,
+           add_chr=FALSE) {
     . <- NULL
+    
+    prefix = if(add_chr) "chr" else ""
     
     region <- snps %>%
       plyr::alply(1, function(x)
-        with(x, glue::glue("{CHR}:{POS}-{POS}"))) %>% {
+        with(x, glue::glue("{prefix}{CHR}:{POS}-{POS}"))) %>% {
           do.call(paste, .)
         }
     

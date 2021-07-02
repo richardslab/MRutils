@@ -6,7 +6,7 @@
 #'
 #' This method combines the cached and API version of get_rsid
 #'
-#' @param chrom The name of the contig for the SNP
+#' @param chrom The name of the contig for the SNP (the "chr" prefix will be ignored if present)
 #' @param pos The (1-based) position of the SNP
 #' @param ref The reference allele (only SNPs are supported)
 #' @param alt The alternate allele (only SNPs are supported)
@@ -24,6 +24,9 @@
 #'get_rsid("9", 125711603, "C", "A") # "rs10760259"
 #'get_rsid("9", 136155000, "T", "C") # "rs635634"
 #'get_rsid("9", 136155000, "C", "T") # "rs635634"
+#'get_rsid("chr6", 32007459, "A",	"G") # "rs12525076"
+#'get_rsid("chr6", 32007459, "G",	"A") # "rs12525076"
+#'get_rsid("6", 32007459, "A",	"G") # "rs12525076"
 #'
 #'
 get_rsid <-
@@ -38,6 +41,7 @@ get_rsid <-
     assembly <- match.arg(assembly)
     try_cache <- is.null(cache_file) || file.exists(cache_file)
     update_cache <- try_cache && update_cache
+    chrom = gsub("^chr", "", chrom)
     
     rsid = NULL
     if (try_cache) {
@@ -258,7 +262,9 @@ put_rsid_into_cache <-
 #'
 #' @name fill_gwas_unknown_rsids
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
-#' @param assembly one of "hg18", "hg19" (default), "hg38".
+#' @param assembly one of "hg18", "hg19" (default), or "hg38".
+#' @param validate a boolean indicating whether to validate the resulting gwas 
+#' (TRUE by default) use FALSE for debugging.
 #'
 #' @return original input gwas with available rsids replacing rsids where possible
 #' @export
@@ -271,12 +277,15 @@ put_rsid_into_cache <-
 #' nrow(fixed_gwas) == nrow(demo_data) # TRUE
 #'
 #'
+#'
 fill_gwas_unknown_rsids <-
-  function(gwas, assembly = valid_references) {
+  function(gwas, assembly = valid_references, validate=TRUE) {
     assembly <- match.arg(assembly)
-    assert_gwas(gwas)
-    withIds <- get_unknown_rsids_from_locus(gwas, assembly)
-    merge_rsids_into_gwas(gwas, withIds)
+    if(validate) {
+      assert_gwas(gwas)
+    }
+    withIds <- get_unknown_rsids_from_locus(gwas, assembly, validate)
+    merge_rsids_into_gwas(gwas, withIds, validate)
   }
 
 
@@ -288,6 +297,8 @@ fill_gwas_unknown_rsids <-
 #'
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
 #' @param assembly one of "hg18", "hg19" (default), "hg38".
+#' @param validate a boolean indicating whether to validate the resulting gwas 
+#' (TRUE by default) use FALSE for debugging.
 #'
 #' @return subset of input gwas with available rsids replacing rsids where they were originally missing. Does
 #' not include all the columns in the original gwas, only CHR, POS, NEA, EA, rsid
@@ -304,10 +315,12 @@ fill_gwas_unknown_rsids <-
 #'
 #'
 get_unknown_rsids_from_locus <-
-  function(gwas, assembly = valid_references) {
+  function(gwas, assembly = valid_references, validate = TRUE) {
     assembly = match.arg(assembly)
-    assert_gwas(gwas)
-    assertthat::assert_that(assembly %in% valid_references)
+    if(validate){
+      assert_gwas(gwas)
+      assertthat::assert_that(assembly %in% valid_references)
+    }
     
     rsid <- CHR <- POS <- NEA <- EA <- NULL
     
@@ -339,7 +352,9 @@ get_unknown_rsids_from_locus <-
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
 #' @param rsids another gwas which contained a subset of the rows in gwas, presumably with
 #' some rsids updated.
-#'
+#'#' @param validate a boolean indicating whether to validate the resulting gwas 
+#' (TRUE by default) use FALSE for debugging.
+
 #' @return original input gwas with available rsids replacing rsids where possible
 #' @export
 #'
@@ -353,9 +368,11 @@ get_unknown_rsids_from_locus <-
 #' fixed_gwas <- merge_rsids_into_gwas(demo_data, fixed_partial_gwas)
 #' nrow(fixed_gwas) == nrow(demo_data) # TRUE
 #'
-merge_rsids_into_gwas <- function(gwas, rsids) {
-  assert_gwas(gwas)
-  assert_rsids(rsids)
+merge_rsids_into_gwas <- function(gwas, rsids, validate=TRUE) {
+  if(validate){
+    assert_gwas(gwas)
+    assert_rsids(rsids)
+  }
   
   rsid <- CHR <- POS <- rsid.x <- rsid.y <- NULL
   
