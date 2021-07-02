@@ -37,8 +37,8 @@
 #' # note that thanks to the cache, calling either of these a second time will result in an immediate
 #' # return value
 #'
-#'
 #'}
+#'
 get_proxies <-
   function(rsids,
            token = Sys.getenv("LDLINK_TOKEN"),
@@ -69,8 +69,7 @@ get_proxies <-
       
       # this takes time and hits the LDlink API.
       if (!skip_api) {
-        future::plan(future::multisession())
-        future.apply::future_lapply(missing_rsids, function(missing_rsid) {
+        lapply(missing_rsids, function(missing_rsid) {
           print(glue::glue("looking for proxies for {missing_rsids}"))
           myfile <- paste0(missing_rsid, ".txt")
           df_proxy <-
