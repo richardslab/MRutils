@@ -70,7 +70,7 @@ get_proxies <-
       # this takes time and hits the LDlink API.
       if (!skip_api) {
         lapply(missing_rsids, function(missing_rsid) {
-          print(glue::glue("looking for proxies for {missing_rsids}"))
+          print(glue::glue("looking for proxies for {missing_rsid}"))
           myfile <- paste0(missing_rsid, ".txt")
           df_proxy <-
             LDlinkR::LDproxy(
@@ -213,6 +213,8 @@ get_LD_pairs <- function(rsids_and_chr, pop, token) {
 #' The Alleles column is assumed to have been already "fixed" according to the "Correlated_Alleles" column (using fix_alleles).
 #' @param near_half_threshold The distance from AEF=0.5 that is to be considered "unimbiguous" when a palindromic SNP
 #' has it.
+#' @param validate a boolean indicating whether to validate the resulting gwas 
+#' (TRUE by default) use FALSE for debugging.
 #'
 #' @return The original dataframe, with palindromic SNPs removed and within each query_rsid only the one with the smallest
 #' P value retained. In the case of a tie, the one with the smallest distance to the query SNP (located in POS.exp) will be
@@ -220,21 +222,27 @@ get_LD_pairs <- function(rsids_and_chr, pop, token) {
 #' @export
 #'
 choose_best_proxies <-
-  function(proxies_and_more, near_half_threshold = 0.08) {
-    proxies_and_more$POS <- proxies_and_more$POS.exp
-    assert_probabilities(proxies_and_more)
-    assert_gwas(proxies_and_more)
+  function(proxies_and_more, near_half_threshold = 0.08, validate=TRUE) {
+    proxies_and_more$POS <- proxies_and_more$POS.source
+    
+    if (validate) {
+      assert_probabilities(proxies_and_more)
+      assert_gwas(proxies_and_more)
+    }
     
     EAF <-
-      POS.exp <-
-      POS.proxy <-
-      Alleles <-
-      query_rsid <- maf_near_half <- R2 <- distance_to_query <- NULL
+    POS.exp <-
+    POS.proxy <-
+    Alleles <-
+    query_rsid <- 
+    maf_near_half <- 
+    R2 <- 
+    distance_to_query <- NULL
     
     proxies_and_more %>%
       dplyr::mutate(
         maf_near_half = abs(EAF - 0.5) <= near_half_threshold,
-        distance_to_query = abs(POS.exp - POS.proxy)
+        distance_to_query = abs(POS.source - POS.proxy)
       ) %>%
       subset(!(Alleles %in% palindromic & maf_near_half)) %>%
       dplyr::group_by(query_rsid) %>%
@@ -311,6 +319,7 @@ prune_snps <-
 #' in replacement_string
 #' @param replacement_string a set of replacement rules in the format "<CHAR_OLD>=<CHAR_NEW>,..."
 #' where the appearances of CHAR_OLD will be replaced by CHAR_NEW. 
+#' @param reverse_direction a flag indicating that the replacement should occur in the reverse direction
 #'
 #' @keywords internal
 #' @export
@@ -323,7 +332,7 @@ prune_snps <-
 #' replace_alleles(list("C", "T"), "C=A,T=C") # c("A", "C")
 #' replace_alleles(list("C", "T"), "C=T,T=C") # c("T", "C")
 #'
-replace_alleles <- function(alleles, replacement_string) {
+replace_alleles <- function(alleles, replacement_string, reverse_direction=FALSE) {
   . <- NULL
   allele_matrix <-
     strsplit(as.character(replacement_string), ",", fixed = T)[[1]] %>%
@@ -339,9 +348,14 @@ replace_alleles <- function(alleles, replacement_string) {
     } %>%
     do.call(what = rbind)
   
-  replace <- unlist(allele_matrix[2, ])
-  pattern <- unlist(allele_matrix[1, ])
-  
+  if(reverse_direction){
+    replace <- unlist(allele_matrix[1, ])
+    pattern <- unlist(allele_matrix[2, ])
+  } else {
+    replace <- unlist(allele_matrix[2, ])
+    pattern <- unlist(allele_matrix[1, ])
+  }
+    
   ret <- alleles %>% sapply(function(x)
     mgsub::mgsub(
       as.character(x),
@@ -349,7 +363,7 @@ replace_alleles <- function(alleles, replacement_string) {
       replacement = replace
     ))
   if (length(unique(ret)) != length(alleles)) {
-    warning("Got fewer unique alleles than was provided, methinks something went wrong...")
+    warning(glue::glue("Got fewer unique alleles than was provided alleles:{alleles}, replacement_string: {replacement_string}, methinks something went wrong...\n"))
   }
   ret
 }
@@ -360,6 +374,7 @@ replace_alleles <- function(alleles, replacement_string) {
 #' @name fix_proxy_alleles
 #'
 #' @param proxies the dataframe containing (at least) the following columns EA, NEA (alleles), Correlated_Alleles
+#' @param reverse_direction a flag indicating that the replacement should occur in the reverse direction
 #'
 #' @return the same dataframe with the alleles in EA and NEA replaced according to Correlated_Alleles column
 #'
@@ -376,11 +391,13 @@ replace_alleles <- function(alleles, replacement_string) {
 #'                                                   "C=C,A=T",
 #'                                                   "A=T,G=C")))
 #'
-fix_proxy_alleles <- function(proxies) {
+fix_proxy_alleles <- function(proxies, reverse_direction = FALSE) {
   . <- NULL
   
   fixed_proxies_with_exposure <- plyr::adply(proxies, 1, function(x) {
-    replace_alleles(list(x$EA, x$NEA), x$Correlated_Alleles) %>%
+    replace_alleles(list(x$EA, x$NEA), 
+                    x$Correlated_Alleles,
+                    reverse_direction) %>%
     {
       data.frame(EA  = .[1],
                  NEA = .[2])

@@ -14,11 +14,11 @@
 #' These position will be queried in the outcome
 #' @param comment_char The character that is the comment character in the file.
 #' @param mapping_function A function that will map the gwas as it is read from disk
-#' to a dataframe that will be sanity-checked as being a gwas.
+#' to a data-frame that will be sanity-checked as being a gwas.
 #' @param validate a boolean indicating whether to validate the resulting gwas 
 #' (after applying the mapping function) (TRUE by default) use FALSE for debugging.
-#' @param add_chr a boolean indicating whether to add "chr" to the names of the contigs in the 
-#' query snps. This is because LDLink 
+#' @param chr_action indicates whether to add a "chr" prefix (if not present) to the names of the contigs in the 
+#' query SNPs, remove it (where present), leave as is, or try to do both (default). "both", "leave","remove","add".
 #' 
 #' @return a gwas containing the subset of the outcome file that was requested.
 #'  The first non-commented line will be assumed to be the header line. It will be
@@ -41,24 +41,69 @@
 #'       EAF = all_meta_AF, 
 #'       SE = all_inv_var_meta_sebeta) %>% subset(select = required_headers)
 #' }
-#' extract_snps_from_bgzip(partial_gwas, demo_data, mapping_function=mapping_function)
+#' extract_snps_from_bgzip(partial_gwas, demo_data, mapping_function=mapping_function, chr_action="remove")
 #'
 extract_snps_from_bgzip <-
-  function(outcome,
-           snps,
-           mapping_function = identity,
-           comment_char = "",
-           validate = TRUE,
-           add_chr=FALSE) {
-    . <- NULL
+  function(
+    outcome,
+    snps,
+    mapping_function = identity,
+    comment_char = "",
+    validate = TRUE,
+    chr_action = "both"
+  ) {
+    CHR <- POS <- . <- NULL 
     
-    prefix = if(add_chr) "chr" else ""
+    chr_action <-
+      match.arg(chr_action, c("leave", "remove", "add", "both"))
     
-    region <- snps %>%
-      plyr::alply(1, function(x)
-        with(x, glue::glue("{prefix}{CHR}:{POS}-{POS}"))) %>% {
-          do.call(paste, .)
-        }
+    unique_proxies_raw <- unique(dplyr::select(snps, c("CHR", "POS")))
+    if (chr_action == "add") {
+      proxies_for_query <- unique_proxies_raw %>%
+        dplyr::mutate(
+          CHR = gsub(
+            "^(?!chr)(?#non-present chr in start of string)",
+            "chr",
+            unique_proxies_raw$CHR,
+            perl = TRUE
+          )
+        ) 
+    } else if (chr_action == "remove") {
+      proxies_for_query <- unique_proxies_raw %>%
+        dplyr::mutate(CHR = gsub("^chr", "", CHR))
+    } else if (chr_action == "both") {
+      proxies_for_query <- rbind(
+        unique_proxies_raw %>%
+          dplyr::mutate(
+            CHR = gsub("^(?!chr)", "chr",
+                       unique_proxies_raw$CHR,
+                       perl = TRUE)
+          ),
+        unique_proxies_raw %>%
+          dplyr::mutate(CHR = gsub("^chr", "", CHR))
+      )
+      
+    }
+    proxies_for_query <- proxies_for_query %>% dplyr::select(c(CHR, POS))
+    
+    region <- with(proxies_for_query,n=1000, glue::glue("{CHR}\t{POS}\t{POS}")) %>% paste(collapse ="\n") 
+    temp_region <- tempfile(pattern = "region__",
+                            tmpdir = tempdir(),
+                            fileext = ".txt")
+    
+    temp_region_file <- file(temp_region,"wt")
+    cat(region, file=temp_region_file, fill = TRUE)
+    close(temp_region_file)
+    
+    temp_output <- tempfile(pattern = "subsetted_gwas__",
+                            tmpdir = tempdir(),
+                            fileext = ".txt")
+
+    # -f to force even if index is older
+    # -T to use temp_region as "targets"
+    cmd <- glue::glue("tabix -f -T '{temp_region}' '{outcome}' > '{temp_output}'")
+    system(cmd)
+    print(cmd)
     
     col_names <- utils::read.table(
       outcome,
@@ -67,15 +112,9 @@ extract_snps_from_bgzip <-
       comment.char = comment_char,
     ) %>% names()
     
-    temp_output <- tempfile(pattern = "subsetted_exposure__",
-                            tmpdir = tempdir(),
-                            fileext = ".txt")
-    
-    cmd <- glue::glue("tabix -f '{outcome}' {region} > '{temp_output}'")
-    system(cmd)
-    outcome_data <-
-      utils::read.table(temp_output, col.names = col_names) %>%
-      mapping_function
+     outcome_data <-
+      utils::read.table(temp_output, comment.char = "", col.names = col_names) %>%
+      mapping_function()
     if (validate) {
       assert_gwas(outcome_data)
     }
