@@ -14,7 +14,7 @@
 #' @param rsids a list of rsids (of snps) for which proxies are wanted.
 #' @param token a token to the ldlink nih service. default will look for an environment variable
 #' LDLINK_PROXY. If you need one go here: https://ldlink.nci.nih.gov/?tab=apiaccess
-#' @param population specify within which population you want to find proxies. E.g. "CEU", "YRI", etc. go
+#' @param population specify within which population you want to find proxies. E.g. "CEU", "YRI", etc.
 #' @param results_dir A subdirectory (a hash that depends on the population and r2_threshold values) of this directory will be used to
 #' cache results
 #' @param skip_api A boolean indicating whether to only use the cached results by skipping the API calls.
