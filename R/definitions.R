@@ -78,11 +78,11 @@ rsid_validator <- validate::validator(
 #' @name gwas_types_validator
 #' @keywords internal
 gwas_types_validator <- validate::validator(
-  p_is_numeric = is.numeric(P),
-  beta_is_numeric = is.numeric(beta),
-  eaf_is_numeric = is.numeric(EAF),
-  se_is_numeric = is.numeric(SE),
-  pos_is_numeric = is.numeric(POS),
+  p_is_numeric = is.na(P) | is.numeric(P) ,
+  beta_is_numeric = is.na(beta) | is.numeric(beta) | is.na(beta),
+  eaf_is_numeric = is.na(EAF) | is.numeric(EAF),
+  se_is_numeric = is.na(SE) | is.numeric(SE),
+  pos_is_numeric =is.numeric(POS),
   chr_is_chr = is.character(CHR),
   required_headers_present = all(required_headers %in% names(.))
 )
@@ -92,9 +92,9 @@ gwas_types_validator <- validate::validator(
 #' @name allele_validator
 #' @keywords internal
 allele_validator <- validate::validator(
-  ea_is_dna = field_format(EA, "[ACGT]", type = "regex"),
-  nea_is_dna = field_format(NEA, "[ACGT]", type = "regex"),
-  eaf_is_prob = in_range(EAF, 0, 1)
+  ea_is_dna = is.na(EA) | field_format(EA, "[ACGT]", type = "regex"),
+  nea_is_dna = is.na(NEA) | field_format(NEA, "[ACGT]", type = "regex"),
+  eaf_is_prob = is.na(EAF) | in_range(EAF, 0, 1)
 )
 
 
@@ -106,13 +106,12 @@ proxy_allele_validator <- validate::validator(
   Correlated_Alleles = field_format(Correlated_Alleles, "[ACGT]=[ACGT],[ACGT]=[ACGT]", type = "regex")
 )
 
-
 #' stats information validator
 #' @name stats_validator
 #' @keywords internal
 stats_validator <- validate::validator(
-  se_is_postive = in_range(SE, min = 0, Inf, strict = TRUE),
-  p_is_prob = in_range(P, 0, 1, strict = TRUE)
+  se_is_postive = is.na(SE) | in_range(SE, min = 0, Inf, strict = TRUE),
+  p_is_prob = is.na(P) | in_range(P, 0, 1, strict = TRUE)
 )
 
 #' stats information validator
@@ -120,7 +119,7 @@ stats_validator <- validate::validator(
 #' @keywords internal
 proxy_stats_validator <- validate::validator(
   # MAF_is_prob = in_range(MAF, min = 0, 1, strict = FALSE),
-  R2_is_prob = in_range(R2, 0, 1, strict = FALSE)
+  R2_is_prob = is.na(R2) | in_range(R2, 0, 1, strict = FALSE)
 )
 
 

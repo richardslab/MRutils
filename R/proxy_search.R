@@ -56,19 +56,22 @@ get_proxies <-
         yaml::write_yaml(config, "config.yaml")
       })
     }
-    
+    # message("listing")
     xfun::in_dir(hashed_subdir_full, {
       raw_rs_files = dir(".", "^rs[0-9]*\\.txt")
+    # message("listed")
       
       rsFiles <-
         Filter(function(x)
           file.info(x)$size > 1000, raw_rs_files)
+      # message("filtered (size)")
       
       missing_rsids <-
         setdiff(rsids, gsub("\\.txt$", "", raw_rs_files))
+      # message(glue::glue("found missing snps (length: {length(missing_rsids)})"))
       
       # this takes time and hits the LDlink API.
-      if (!skip_api) {
+      if (!skip_api && length(missing_rsids)) {
         lapply(missing_rsids, function(missing_rsid) {
           print(glue::glue("looking for proxies for {missing_rsid}"))
           myfile <- paste0(missing_rsid, ".txt")
@@ -112,8 +115,8 @@ get_proxies <-
         Locus <-
         Coord <- Alleles <- RS_Number <- rsid <- query_rsid <- NULL
       # only read snps
-      proxies <-
-        plyr::ldply(rsFiles, function(x)
+      proxies <-Filter(x=rsFiles,f=function(x) {rsid = gsub("\\.txt$", "", x); rsid %in% rsids}) %>%
+        plyr::ldply(function(x)
           dplyr::mutate(
             query_rsid = gsub("\\.txt$", "", x),
             utils::read.table(x, sep = "\t")
@@ -122,17 +125,6 @@ get_proxies <-
                      grepl("([ACGT]/[ACGT])", x = Alleles))) %>%
         dplyr::mutate(rsid = RS_Number, Locus = Coord) %>%
         subset(query_rsid %in% rsids) %>%
-        dplyr::select(
-          c(
-            -"Distance",
-            -"Dprime",
-            -"RegulomeDB",
-            -"Function",
-            -"RS_Number",
-            -"Coord",
-            -"MAF"
-          )
-        ) %>%
         dplyr::mutate(
           CHR = gsub(
             pattern = "^chr",
@@ -145,10 +137,14 @@ get_proxies <-
             rbind, strsplit(as.character(Locus), split = ':', fixed = TRUE)
           )[, 2])
         ) %>%
-        subset(R2 >= r2_threshold) %>% mutate_cond(condition = rsid == ".", rsid =
-                                                     NA)
+        subset(R2 >= r2_threshold) %>% 
+        mutate_cond(condition = rsid == ".", rsid = NA)
     })
-    assert_proxies(proxies)
+    if(nrow(proxies)){
+      proxies <-proxies %>% dplyr::select(c("CHR","POS","query_rsid","rsid","Alleles", "R2", "Correlated_Alleles" ,"Locus"))
+      assert_proxies(proxies)
+    }
+    
     proxies
   }
 

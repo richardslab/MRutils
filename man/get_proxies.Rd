@@ -19,7 +19,7 @@ get_proxies(
 \item{token}{a token to the ldlink nih service. default will look for an environment variable
 LDLINK_PROXY. If you need one go here: https://ldlink.nci.nih.gov/?tab=apiaccess}
 
-\item{population}{specify within which population you want to find proxies. E.g. "CEU", "YRI", etc. go}
+\item{population}{specify within which population you want to find proxies. E.g. "CEU", "YRI", etc.}
 
 \item{results_dir}{A subdirectory (a hash that depends on the population and r2_threshold values) of this directory will be used to
 cache results}

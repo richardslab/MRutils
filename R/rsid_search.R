@@ -91,12 +91,18 @@ get_rsid <-
 get_rsid_from_position <-
   function(chrom, pos, ref, alt, assembly = valid_references) {
     assembly <- match.arg(assembly)
+    tryCatch({
     assertthat::assert_that(assembly %in% valid_references)
     assertthat::assert_that(chrom %in% valid_contigs |
                               chrom %in% valid_contigs_with_chr)
     assertthat::assert_that(ref %in% valid_alleles)
     assertthat::assert_that(alt %in% valid_alleles)
     assertthat::assert_that(pos > 0)
+    }, error=function(cond) {
+      message(glue::glue("Problem with attempt to get rsid: chrom:{chrom}, pos:{pos}, ref-allele:{ref} alt-allele:{alt}, assembly:{assembly}"));
+      message(cond)
+      stop("Please resolve this before continueing.")
+      })
     
     baseURL1 <-
       "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{r}/{a}/contextuals?assembly={assembly}"

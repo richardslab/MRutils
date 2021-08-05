@@ -11,7 +11,7 @@ fill_gwas_unknown_rsids(gwas, assembly = valid_references, validate = TRUE)
 
 \item{assembly}{one of "hg18", "hg19" (default), or "hg38".}
 
-\item{validate}{a boolean indicating whether to validate the resulting gwas 
+\item{validate}{a boolean indicating whether to validate the resulting gwas
 (TRUE by default) use FALSE for debugging.}
 }
 \value{

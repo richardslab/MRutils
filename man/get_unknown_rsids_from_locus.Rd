@@ -15,7 +15,7 @@ get_unknown_rsids_from_locus(
 
 \item{assembly}{one of "hg18", "hg19" (default), "hg38".}
 
-\item{validate}{a boolean indicating whether to validate the resulting gwas 
+\item{validate}{a boolean indicating whether to validate the resulting gwas
 (TRUE by default) use FALSE for debugging.}
 }
 \value{
@@ -33,6 +33,7 @@ partial_gwas = get_unknown_rsids_from_locus(demo_data)
 any(is.na(partial_gwas$rsid)) # FALSE
 nrow(partial_gwas) == nrow(demo_data) # false
 
+plyr::empty(get_unknown_rsids_from_locus(subset(demo_data,!is.na(rsid)))) #TRUE
 
 }
 \keyword{internal}

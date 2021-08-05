@@ -11,7 +11,7 @@ merge_rsids_into_gwas(gwas, rsids, validate = TRUE)
 
 \item{rsids}{another gwas which contained a subset of the rows in gwas, presumably with
 some rsids updated.
-#' @param validate a boolean indicating whether to validate the resulting gwas 
+#' @param validate a boolean indicating whether to validate the resulting gwas
 (TRUE by default) use FALSE for debugging.}
 }
 \value{
@@ -28,6 +28,9 @@ any(is.na(fixed_partial_gwas$rsid)) # FALSE
 nrow(fixed_partial_gwas) == nrow(demo_data) # FALSE
 fixed_gwas <- merge_rsids_into_gwas(demo_data, fixed_partial_gwas)
 nrow(fixed_gwas) == nrow(demo_data) # TRUE
+
+still_demo_data <- merge_rsids_into_gwas(demo_data, subset(fixed_partial_gwas, FALSE)) # same as original
+dplyr::all_equal(still_demo_data, demo_data) # TRUE
 
 }
 \keyword{internal}
