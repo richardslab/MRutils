@@ -34,8 +34,7 @@ jobs:
 
       - name: test LaTeX installation
         run: |
-          echo $PATH
-          ls /Library/TeX/texbin
+          export PATH="$PATH":/Library/TeX/texbin
           pdflatex --help
 
       - uses: actions/checkout@v2
