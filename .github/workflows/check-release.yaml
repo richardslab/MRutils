@@ -25,6 +25,12 @@ jobs:
       - name: test tabix
         run: tabix --help
 
+      - name: install LaTeX
+        run: brew install basictex
+
+      - name: test LaTeX installation
+        run: pdflatex --help
+
       - uses: actions/checkout@v2
 
       - uses: r-lib/actions/setup-r@v1
