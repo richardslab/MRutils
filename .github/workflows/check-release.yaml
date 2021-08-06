@@ -28,7 +28,7 @@ jobs:
       - name: install LaTeX
         run: |
           brew install basictex
-          brew cask install mactex-no-gui
+          eval "$(/usr/libexec/path_helper)"
 
       - name: test LaTeX installation
         run: pdflatex --help
