@@ -66,6 +66,7 @@ jobs:
 
       - name: Check
         run: |
+          setenv(PATH=paste(getenv("PATH"),"/Library/TeX/texbin",sep=":"))
           options(crayon.enabled = TRUE)
           rcmdcheck::rcmdcheck(error_on = "error")
         shell: Rscript {0}
