@@ -16,8 +16,13 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: install homebrew
+        run: ruby -e "$(curl -fsSkL raw.github.com/mxcl/homebrew/go)"
+
       - name: install tabix
-        run: sudo apt-get install -y tabix
+        run: |
+          brew tap homebrew/science
+          brew install tabix
 
       - uses: actions/checkout@v2
 
