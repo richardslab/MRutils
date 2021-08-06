@@ -30,7 +30,6 @@ jobs:
           brew install basictex
           brew cask install mactex-no-gui
 
-
       - name: test LaTeX installation
         run: pdflatex --help
 
