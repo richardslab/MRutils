@@ -31,9 +31,12 @@ jobs:
           eval "$(/usr/libexec/path_helper)"
           echo $PATH
           ls /Library/TeX/texbin
-          
+
       - name: test LaTeX installation
-        run: pdflatex --help
+        run: |
+          echo $PATH
+          ls /Library/TeX/texbin
+          pdflatex --help
 
       - uses: actions/checkout@v2
 
