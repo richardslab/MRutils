@@ -2,11 +2,12 @@
 
 
 
+
 #' Get rsid name from position
 #'
 #' This method combines the cached and API version of get_rsid
 #'
-#' @param chrom The name of the contig for the SNP
+#' @param chrom The name of the contig for the SNP (the "chr" prefix will be ignored if present)
 #' @param pos The (1-based) position of the SNP
 #' @param ref The reference allele (only SNPs are supported)
 #' @param alt The alternate allele (only SNPs are supported)
@@ -24,6 +25,9 @@
 #'get_rsid("9", 125711603, "C", "A") # "rs10760259"
 #'get_rsid("9", 136155000, "T", "C") # "rs635634"
 #'get_rsid("9", 136155000, "C", "T") # "rs635634"
+#'get_rsid("chr6", 32007459, "A",	"G") # "rs12525076"
+#'get_rsid("chr6", 32007459, "G",	"A") # "rs12525076"
+#'get_rsid("6", 32007459, "A",	"G") # "rs12525076"
 #'
 #'
 get_rsid <-
@@ -38,6 +42,7 @@ get_rsid <-
     assembly <- match.arg(assembly)
     try_cache <- is.null(cache_file) || file.exists(cache_file)
     update_cache <- try_cache && update_cache
+    chrom = gsub("^chr", "", chrom)
     
     rsid = NULL
     if (try_cache) {
@@ -86,12 +91,18 @@ get_rsid <-
 get_rsid_from_position <-
   function(chrom, pos, ref, alt, assembly = valid_references) {
     assembly <- match.arg(assembly)
+    tryCatch({
     assertthat::assert_that(assembly %in% valid_references)
     assertthat::assert_that(chrom %in% valid_contigs |
                               chrom %in% valid_contigs_with_chr)
     assertthat::assert_that(ref %in% valid_alleles)
     assertthat::assert_that(alt %in% valid_alleles)
     assertthat::assert_that(pos > 0)
+    }, error=function(cond) {
+      message(glue::glue("Problem with attempt to get rsid: chrom:{chrom}, pos:{pos}, ref-allele:{ref} alt-allele:{alt}, assembly:{assembly}"));
+      message(cond)
+      stop("Please resolve this before continueing.")
+      })
     
     baseURL1 <-
       "https://api.ncbi.nlm.nih.gov/variation/v0/vcf/{chrom}/{pos}/{r}/{a}/contextuals?assembly={assembly}"
@@ -258,7 +269,9 @@ put_rsid_into_cache <-
 #'
 #' @name fill_gwas_unknown_rsids
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
-#' @param assembly one of "hg18", "hg19" (default), "hg38".
+#' @param assembly one of "hg18", "hg19" (default), or "hg38".
+#' @param validate a boolean indicating whether to validate the resulting gwas
+#' (TRUE by default) use FALSE for debugging.
 #'
 #' @return original input gwas with available rsids replacing rsids where possible
 #' @export
@@ -271,12 +284,18 @@ put_rsid_into_cache <-
 #' nrow(fixed_gwas) == nrow(demo_data) # TRUE
 #'
 #'
+#'
 fill_gwas_unknown_rsids <-
-  function(gwas, assembly = valid_references) {
+  function(gwas,
+           assembly = valid_references,
+           validate = TRUE) {
     assembly <- match.arg(assembly)
-    assert_gwas(gwas)
-    withIds <- get_unknown_rsids_from_locus(gwas, assembly)
-    merge_rsids_into_gwas(gwas, withIds)
+    if (validate) {
+      assert_gwas(gwas)
+    }
+    withIds <-
+      get_unknown_rsids_from_locus(gwas, assembly, validate)
+    merge_rsids_into_gwas(gwas, withIds, validate)
   }
 
 
@@ -288,6 +307,8 @@ fill_gwas_unknown_rsids <-
 #'
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
 #' @param assembly one of "hg18", "hg19" (default), "hg38".
+#' @param validate a boolean indicating whether to validate the resulting gwas
+#' (TRUE by default) use FALSE for debugging.
 #'
 #' @return subset of input gwas with available rsids replacing rsids where they were originally missing. Does
 #' not include all the columns in the original gwas, only CHR, POS, NEA, EA, rsid
@@ -302,12 +323,17 @@ fill_gwas_unknown_rsids <-
 #' any(is.na(partial_gwas$rsid)) # FALSE
 #' nrow(partial_gwas) == nrow(demo_data) # false
 #'
+#' plyr::empty(get_unknown_rsids_from_locus(subset(demo_data,!is.na(rsid)))) #TRUE
 #'
 get_unknown_rsids_from_locus <-
-  function(gwas, assembly = valid_references) {
+  function(gwas,
+           assembly = valid_references,
+           validate = TRUE) {
     assembly = match.arg(assembly)
-    assert_gwas(gwas)
-    assertthat::assert_that(assembly %in% valid_references)
+    if (validate) {
+      assert_gwas(gwas)
+      assertthat::assert_that(assembly %in% valid_references)
+    }
     
     rsid <- CHR <- POS <- NEA <- EA <- NULL
     
@@ -315,20 +341,36 @@ get_unknown_rsids_from_locus <-
       x = gwas,
       subset = is.na(rsid),
       select = c(CHR, POS, NEA, EA)
-    ) %>% plyr::mutate(assembly = assembly)
+    ) %>% {
+      tryCatch(
+        plyr::mutate(., assembly = "hg19"),
+        error = function(x)
+          return(.)
+      )
+    }
     
     ## this can take time and hits the API multiple times....
-    withIds <- plyr::adply(unknown_ids, 1, function(x) {
-      c(rsid = get_rsid(
-        chrom = x$CHR,
-        pos = x$POS,
-        ref = x$NEA,
-        alt = x$EA,
-        assembly = x$assembly
-      ))
-    }) %>% plyr::mutate(assembly = NULL)
-    
-    withIds
+    if (nrow(unknown_ids) > 0) {
+      withIds <- plyr::adply(unknown_ids, 1, function(x) {
+        c(rsid = get_rsid(
+          chrom = x$CHR,
+          pos = x$POS,
+          ref = x$NEA,
+          alt = x$EA,
+          assembly = x$assembly
+        ))
+      }) %>% {
+        tryCatch(
+          plyr::mutate(., assembly = "hg19"),
+          error = function(x)
+            return(.)
+        )
+      }
+      
+      withIds
+    } else {
+      data.frame()
+    }
   }
 
 
@@ -339,7 +381,9 @@ get_unknown_rsids_from_locus <-
 #' @param gwas a dataframe containing the gwas with CHR POS NEA and EA
 #' @param rsids another gwas which contained a subset of the rows in gwas, presumably with
 #' some rsids updated.
-#'
+#'#' @param validate a boolean indicating whether to validate the resulting gwas
+#' (TRUE by default) use FALSE for debugging.
+
 #' @return original input gwas with available rsids replacing rsids where possible
 #' @export
 #'
@@ -353,23 +397,42 @@ get_unknown_rsids_from_locus <-
 #' fixed_gwas <- merge_rsids_into_gwas(demo_data, fixed_partial_gwas)
 #' nrow(fixed_gwas) == nrow(demo_data) # TRUE
 #'
-merge_rsids_into_gwas <- function(gwas, rsids) {
-  assert_gwas(gwas)
-  assert_rsids(rsids)
-  
-  rsid <- CHR <- POS <- rsid.x <- rsid.y <- NULL
-  
-  gwas_with_ids <- plyr::mutate(gwas, rsid = as.character(rsid)) %>%
-    merge(subset(rsids, select = c(CHR, POS, rsid)),
-          all.x = T,
-          by = c("CHR", "POS")) %>%
-    plyr::mutate(
-      rsid = plyr::adply(do.call(cbind, list(rsid.y, rsid.x)), 1, function(x)
-        dplyr::first(stats::na.omit(x)))$V1,
-      rsid.x = NULL,
-      rsid.y = NULL
-    )
-  gwas_with_ids
+#' still_demo_data <- merge_rsids_into_gwas(demo_data, subset(fixed_partial_gwas, FALSE)) # same as original
+#' dplyr::all_equal(still_demo_data, demo_data) # TRUE
+#'
+merge_rsids_into_gwas <- function(gwas, rsids, validate = TRUE) {
+  if (!plyr::empty(rsids)) {
+    if (validate) {
+      assert_gwas(gwas)
+      assert_rsids(rsids)
+    }
+    
+    rsid <- CHR <- POS <- rsid.x <- rsid.y <- NULL
+    
+    gwas_with_ids <-
+      plyr::mutate(gwas, rsid = as.character(rsid)) %>%
+      {
+        tryCatch(
+          merge(
+            .,
+            subset(rsids, select = c(CHR, POS, rsid)),
+            all.x = T,
+            by = c("CHR", "POS")
+          ),
+          error = function(e)
+            return(.)
+        )
+      } %>%
+      plyr::mutate(
+        rsid = plyr::adply(do.call(cbind, list(rsid.y, rsid.x)), 1, function(x)
+          dplyr::first(stats::na.omit(x)))$V1,
+        rsid.x = NULL,
+        rsid.y = NULL
+      )
+    gwas_with_ids
+  } else {
+    gwas
+  }
 }
 
 #' Not in operator

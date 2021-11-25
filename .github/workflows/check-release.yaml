@@ -16,6 +16,27 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: install homebrew
+        run: ruby -e "$(curl -fsSkL raw.github.com/mxcl/homebrew/go)"
+
+      - name: install tabix
+        run: brew install samtools
+          
+      - name: test tabix
+        run: tabix --help
+
+      - name: install LaTeX
+        run: |
+          brew install basictex
+          eval "$(/usr/libexec/path_helper)"
+          echo $PATH
+          ls /Library/TeX/texbin
+
+      - name: test LaTeX installation
+        run: |
+          export PATH="$PATH":/Library/TeX/texbin
+          pdflatex --help
+
       - uses: actions/checkout@v2
 
       - uses: r-lib/actions/setup-r@v1
@@ -36,7 +57,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
           restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
 
-      - name: Install dependencies
+      - name: Install R dependencies
         run: |
           install.packages(c("remotes", "rcmdcheck", "renv"))
           remotes::install_deps(dependencies = TRUE)
@@ -45,6 +66,7 @@ jobs:
 
       - name: Check
         run: |
+          setenv(PATH=paste(getenv("PATH"),"/Library/TeX/texbin",sep=":"))
           options(crayon.enabled = TRUE)
-          rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
+          rcmdcheck::rcmdcheck(error_on = "error")
         shell: Rscript {0}

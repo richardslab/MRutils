@@ -463,6 +463,20 @@
       "Repository": "CRAN",
       "Hash": "44594a07a42e5f91fac9f93fda6d0109"
     },
+    "future": {
+      "Package": "future",
+      "Version": "1.21.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "f25fad6bee82b7ab01f055e2d813b96f"
+    },
+    "future.apply": {
+      "Package": "future.apply",
+      "Version": "1.7.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "7fb0dc1961807da107ab2078366052bd"
+    },
     "gargle": {
       "Package": "gargle",
       "Version": "1.1.0",
@@ -490,6 +504,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "18482cb4790abf3ed27cafa2381d6175"
+    },
+    "globals": {
+      "Package": "globals",
+      "Version": "0.14.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "eca8023ed5ca6372479ebb9b3207f5ae"
     },
     "glue": {
       "Package": "glue",
@@ -664,6 +685,13 @@
       "Repository": "CRAN",
       "Hash": "3471fb65971f1a7b2d4ae7848cf2db8d"
     },
+    "listenv": {
+      "Package": "listenv",
+      "Version": "0.8.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0bde42ee282efb18c7c4e63822f5b4f7"
+    },
     "lme4": {
       "Package": "lme4",
       "Version": "1.1-26",
@@ -817,6 +845,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "2253a430965e222d11a2f9277cd34c2e"
+    },
+    "parallelly": {
+      "Package": "parallelly",
+      "Version": "1.26.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "267fe92836a0eb43becabd3306cc75d1"
     },
     "pbapply": {
       "Package": "pbapply",
