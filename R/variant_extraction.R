@@ -19,6 +19,7 @@
 #' (after applying the mapping function) (TRUE by default) use FALSE for debugging.
 #' @param chr_action indicates whether to add a "chr" prefix (if not present) to the names of the contigs in the 
 #' query SNPs, remove it (where present), leave as is, or try to do both (default). "both", "leave","remove","add".
+#' @param pad the amound (in basepairs) to pad each provided locus prior to querying for the results.
 #' 
 #' @return a gwas containing the subset of the outcome file that was requested.
 #'  The first non-commented line will be assumed to be the header line. It will be
@@ -50,7 +51,8 @@ extract_snps_from_bgzip <-
     mapping_function = identity,
     comment_char = "",
     validate = TRUE,
-    chr_action = "both"
+    chr_action = "both",
+    pad = 0
   ) {
     CHR <- POS <- . <- NULL 
     
@@ -84,9 +86,9 @@ extract_snps_from_bgzip <-
       )
       
     }
-    proxies_for_query <- proxies_for_query %>% dplyr::select(c(CHR, POS))
-    
-    region <- with(proxies_for_query,n=1000, glue::glue("{CHR}\t{POS}\t{POS}")) %>% paste(collapse ="\n") 
+    proxies_for_query <- proxies_for_query %>% dplyr::select(c(CHR, POS))%>%dplyr::mutate(start=pmax(1,POS-pad), end=POS+pad)
+    region <- with(proxies_for_query, glue::glue("{CHR}\t{start}\t{end}")) %>% paste(collapse ="\n") 
+    # region <- with(proxies_for_query,n=1000, glue::glue("{CHR}\t{start}\t{end}")) %>% paste(collapse ="\n") 
     temp_region <- tempfile(pattern = "region__",
                             tmpdir = tempdir(),
                             fileext = ".txt")
@@ -113,11 +115,39 @@ extract_snps_from_bgzip <-
     ) %>% names()
     
      outcome_data <-
-      utils::read.table(temp_output, comment.char = "", col.names = col_names) %>%
+      utils::read.table(temp_output, comment.char = "", col.names = col_names, as.is=TRUE) %>%
       mapping_function()
     if (validate) {
       assert_gwas(outcome_data)
     }
     outcome_data
   }
+
+
+
+#' Function that is a mapping function for the example data in system.file("extdata", "COVID_partial_gwas_hg37.txt.gz", package = "MRutils")
+#' Can be used when accessing that data for example with extract_snps_from_bgzip
+#'
+#' @name example_mapping_function
+#'
+#' @param x a dataframe which was read from a file
+#' 
+#' @return a dataframe that was mapped and should now be valid according to assert_gwas
+#'
+#' @export
+#'
+example_mapping_function <- function(x) {
+  X.CHR<-all_inv_var_meta_beta<-all_inv_var_meta_p<-ALT<-REF<-all_meta_AF<-all_inv_var_meta_sebeta<-NULL
+
+  dplyr::mutate(x,
+               CHR = as.character(X.CHR),
+               beta = all_inv_var_meta_beta,
+               P = all_inv_var_meta_p,
+               EA = ALT,
+               NEA = REF,
+               EAF = all_meta_AF,
+               SE = all_inv_var_meta_sebeta) %>% 
+    subset(select = required_headers)
+}
+
 

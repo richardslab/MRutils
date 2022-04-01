@@ -11,17 +11,17 @@ choose_best_proxies(
 )
 }
 \arguments{
-\item{proxies_and_more}{the dataframe containing results from get_proxies merged with an outcome GWAS.
+\item{proxies_and_more}{the data-frame containing results from get_proxies merged with an outcome GWAS.
 The Alleles column is assumed to have been already "fixed" according to the "Correlated_Alleles" column (using fix_alleles).}
 
-\item{near_half_threshold}{The distance from AEF=0.5 that is to be considered "unimbiguous" when a palindromic SNP
+\item{near_half_threshold}{The distance from AEF=0.5 that is to be considered "unambiguous" when a palindromic SNP
 has it.}
 
-\item{validate}{a boolean indicating whether to validate the resulting gwas 
+\item{validate}{a Boolean indicating whether to validate the resulting gwas 
 (TRUE by default) use FALSE for debugging.}
 }
 \value{
-The original dataframe, with palindromic SNPs removed and within each query_rsid only the one with the smallest
+The original data-frame, with palindromic SNPs removed and within each query_rsid only the one with the smallest
 P value retained. In the case of a tie, the one with the smallest distance to the query SNP (located in POS.exp) will be
 chosen. In the extremely rare case of a further tie, it will be broken randomly.
 }

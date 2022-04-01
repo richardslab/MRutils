@@ -5,15 +5,19 @@
 \title{Gets the LD between all the pairs of snps (that are in the same contig) from the set provided by
 the input dataframe}
 \usage{
-get_LD_pairs(rsids_and_chr, pop, token)
+get_LD_pairs(rsids_and_chr, pop, token, position_distance_cutoff = 5e+05)
 }
 \arguments{
-\item{rsids_and_chr}{is a dataframe that contains (at least) the following two columns: CHR, rsid}
-
 \item{pop}{the population codes (or vector thereof) in which the LD is calculated e.g. c("CEU"), c("CEU","YRI")}
 
 \item{token}{is an access token to the nci API.
 if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess}
+
+\item{position_distance_cutoff}{The largest distance between neighboring variants that would 
+be queried for LD. variants with larger distance could still be queried if there's a variant between
+them that "links" them.}
+
+\item{rsids_and_var}{is a dataframe that contains (at least) the following  columns: CHR, POS, and rsid}
 }
 \value{
 a dataframe containing the following columns: CHR, RS_number, variable, value where
@@ -32,7 +36,16 @@ the input dataframe
    get_LD_pairs(data.frame(CHR="chr9", 
                            rsid=c("rs10760259","rs635634")),
                            pop=c("CEU"), 
-                           token=Sys.getenv("LDLINK_TOKEN"))
+                           token=Sys.getenv("LD_LINK_TOKEN"))
+   get_LD_pairs(data.frame(CHR=c("chr9","chr10"), 
+                           rsid=c("rs10760259","rs7899632")),
+                           pop=c("CEU"), 
+                           token=Sys.getenv("LD_LINK_TOKEN"))
+   get_LD_pairs(data.frame(CHR="chr9", 
+                           rsid=c("rs635634")),
+                           pop=c("CEU"), 
+                           token=Sys.getenv("LD_LINK_TOKEN"))
 }
+
 
 }

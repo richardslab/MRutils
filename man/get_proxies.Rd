@@ -10,7 +10,7 @@ get_proxies(
   population,
   results_dir = NULL,
   skip_api = FALSE,
-  r2_threshold = 0.9
+  r2_threshold = 0.8
 )
 }
 \arguments{
@@ -40,7 +40,7 @@ A token for the service is required, please get one at https://ldlink.nci.nih.go
 \examples{
 
 \dontrun{ #because it needs a token.
-# If one does `Sys.setenv(LDLINK_TOKEN=<Your token here>)` first, this will work
+# If one does `Sys.setenv(LDLINK_TOKEN="<Your token here>")` first, this will work
 
 get_proxies("rs2495477", pop="CEU", results_dir="derived_data")  #returns one proxy
 get_proxies("rs373780327", pop="CEU", results_dir="derived_data") #returns no proxies

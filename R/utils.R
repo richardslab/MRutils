@@ -123,3 +123,38 @@ get_2smr_results <- function(preprocessed_snps){
   )
 }
 
+
+#' split the provided positions (assumed to be within a single chromosome) into 
+#' groups that have a separation (strictly) greater than the provided cutoff. 
+#' 
+#'
+#' @param positions (numerical) values that will be clustered
+#' @param cutoff_distance the distance between neighboring points that will 
+#' trigger a new cluster
+#'
+#' @return dataframe with columns `POS` (the original values, sorted) and 
+#' `cluster` (an integer value enumerating the cluster to which the point belongs)
+#' @export
+#'
+#' @examples
+#' 
+#' cluster_loci(c(1,2,3,6,7,8),2) #should split into two clusters
+#' cluster_loci(c(1,2,3,6,7,8),1) #should split into same two clusters
+#' cluster_loci(c(6,1,7,2,3,8),2) #should split into same two clusters
+#' cluster_loci(c(6,1,7,2,3,8),10) #should split into a single clusters
+#' cluster_loci(c(1,2,3,5,6,7,9,10,11),1) #should split into 3 clusters
+#' 
+#' 
+cluster_loci <- function(positions, cutoff_distance) {
+  pos = sort(positions)
+  diff = diff(pos)
+  
+  cut_points <- which(diff>cutoff_distance) %>% 
+    append(length(positions))
+  
+  cluster=append(0, cut_points) %>%
+    diff()%>% 
+    rep(seq(length(cut_points)), .)
+  data.frame(POS=pos,cluster=cluster)
+}
+

@@ -1,6 +1,6 @@
 Package: MRutils
-Version: 0.2.1.0
-Date: 2021-05-14
+Version: 0.3.0.0
+Date: 2022-01-14
 Title: Utility functions for preparing data for Two-Sample MR
 Authors@R: c(person("Yossi", "Farjoun", role = c("aut", "cre"),
                      email = "farjoun@gmail.com"))

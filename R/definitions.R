@@ -160,6 +160,10 @@ assert_valid_data <-
   function(data,
            validator,
            on_error = on_error_options) {
+    if (nrow(data)==0){
+      return(NULL)
+    }
+    
     on_error <- match.arg(on_error)
     df <- as.data.frame(data)
     val_sum <-
@@ -219,6 +223,9 @@ valid_references <- c("hg19", "hg18", "hg38")
 assert_gwas <-
   function(data, on_error = on_error_options) {
     on_error <- match.arg(on_error)
+    if (nrow(data)==0){
+      return()
+    }
     assert_valid_data(data, gwas_validator, on_error) &&
     assert_valid_data(data, gwas_types_validator,
                       if (on_error == "all")
@@ -251,9 +258,12 @@ assert_gwas <-
 #'
 #'
 assert_rsids <-
-  function(data, on_error = on_error_options)
+  function(data, on_error = on_error_options){
+    if (nrow(data)==0){
+      return()
+    }
     assert_valid_data(data, validator = rsid_validator, on_error)
-
+}
 
 #' Check that input contains a CHR column with values that look like (human) contigs
 #'
@@ -283,9 +293,12 @@ assert_rsids <-
 #'
 #'
 #'
-assert_chr <- function(data, on_error = on_error_options)
+assert_chr <- function(data, on_error = on_error_options){
+  if (nrow(data)==0){
+    return()
+  }
   assert_valid_data(data, validator = chr_validator, on_error)
-
+}
 
 #' Check that input is a vector of strings that look like rsids
 #'
@@ -312,14 +325,14 @@ assert_chr <- function(data, on_error = on_error_options)
 #'
 #'
 assert_probabilities <-
-  function(data, on_error = on_error_options)
+  function(data, on_error = on_error_options){
     assert_valid_data(data, validator = stats_validator, on_error)
-
+}
 # this asserts that a data.frame has the right columns for proxies
 assert_proxies <-
-  function(data, on_error = on_error_options)
+  function(data, on_error = on_error_options){
     assert_valid_data(data, validator = proxy_validator, on_error)
-
+}
 
 # this asserts that a list of values "looks like" probabilities 
 assert_probability <- function(p) {

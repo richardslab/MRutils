@@ -10,7 +10,8 @@ extract_snps_from_bgzip(
   mapping_function = identity,
   comment_char = "",
   validate = TRUE,
-  chr_action = "both"
+  chr_action = "both",
+  pad = 0
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ to a data-frame that will be sanity-checked as being a gwas.}
 
 \item{chr_action}{indicates whether to add a "chr" prefix (if not present) to the names of the contigs in the 
 query SNPs, remove it (where present), leave as is, or try to do both (default). "both", "leave","remove","add".}
+
+\item{pad}{the amound (in basepairs) to pad each provided locus prior to querying for the results.}
 }
 \value{
 a gwas containing the subset of the outcome file that was requested.

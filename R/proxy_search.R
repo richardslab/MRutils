@@ -26,7 +26,7 @@
 #' @examples
 #'
 #' \dontrun{ #because it needs a token.
-#' # If one does `Sys.setenv(LDLINK_TOKEN=<Your token here>)` first, this will work
+#' # If one does `Sys.setenv(LDLINK_TOKEN="<Your token here>")` first, this will work
 #'
 #' get_proxies("rs2495477", pop="CEU", results_dir="derived_data")  #returns one proxy
 #' get_proxies("rs373780327", pop="CEU", results_dir="derived_data") #returns no proxies
@@ -45,7 +45,7 @@ get_proxies <-
            population,
            results_dir = NULL,
            skip_api = FALSE,
-           r2_threshold = 0.9) {
+           r2_threshold = 0.8) {
     config = list(pop = population, r2_thresh = r2_threshold)
     hashed_subdir = digest::digest(config)
     hashed_subdir_full = glue::glue("{results_dir}/{hashed_subdir}")
@@ -61,13 +61,9 @@ get_proxies <-
       raw_rs_files = dir(".", "^rs[0-9]*\\.txt")
     # message("listed")
       
-      rsFiles <-
-        Filter(function(x)
-          file.info(x)$size > 1000, raw_rs_files)
-      # message("filtered (size)")
+      rsids_represented = gsub("\\.txt$", "", raw_rs_files)
+      missing_rsids <- Filter(x=rsids, f=function(x) !(x %in% rsids_represented) || file.info(paste0(x,".txt"))$size < 1000)
       
-      missing_rsids <-
-        setdiff(rsids, gsub("\\.txt$", "", raw_rs_files))
       # message(glue::glue("found missing snps (length: {length(missing_rsids)})"))
       
       # this takes time and hits the LDlink API.
@@ -96,11 +92,7 @@ get_proxies <-
           }
         })
         
-        
-        rsFiles <-
-          Filter(function(x)
-            file.info(x)$size > 1000,
-            dir(".", "^rs[0-9]*\\.txt"))
+        raw_rs_files <-dir(".", "^rs[0-9]*\\.txt")
       } else if (length(missing_rsids) > 0) {
         warning(
           glue::glue(
@@ -109,13 +101,17 @@ get_proxies <-
         )
       }
       
-      
-      
       R2 <-
         Locus <-
-        Coord <- Alleles <- RS_Number <- rsid <- query_rsid <- NULL
+        Coord <- 
+        Alleles <- 
+        RS_Number <- 
+        rsid <- 
+        query_rsid <- NULL
       # only read snps
-      proxies <-Filter(x=rsFiles,f=function(x) {rsid = gsub("\\.txt$", "", x); rsid %in% rsids}) %>%
+      
+     
+        proxies <-Filter(x=raw_rs_files,f=function(x) {rsid = gsub("\\.txt$", "", x); rsid %in% rsids}) %>%
         plyr::ldply(function(x)
           dplyr::mutate(
             query_rsid = gsub("\\.txt$", "", x),
@@ -149,15 +145,102 @@ get_proxies <-
   }
 
 
+#' Use LD matrix for the proxy searching by including candidate variants from the outcome gwas. 
+#'
+#' @param variant_query 
+#' @param variant_candidates_file 
+#' @param token 
+#' @param population 
+#' @param comment_char 
+#' @param r2_threshold 
+#' @param mapping_function 
+#' @param validate 
+#' @param candidate_distance 
+#' 
+#' 
+#' @export
+#'
+#'
+#'### not sure this is a great idea given that it involves querying a much larger set of variants....
+#'
+get_proxies_given_candidates <- function(variant_query,
+                                         variant_candidates_file,
+                                         token = Sys.getenv("LDLINK_TOKEN"),
+                                         population,
+                                         comment_char="#",
+                                         r2_threshold = 0.8, 
+                                         mapping_function=identity,
+                                         validate=TRUE,
+                                         candidate_distance=200000) {
+  
+    # if(nrow(variant_query) > 800){
+    #   warning("lots of query variants, might be slow")
+    # }   
+    # 
+    # if(nrow(variant_query) >= 1000){
+    #   stop("too many query variants, (>=1000) can't proceed")
+    # }   
+    # 
+    # find candidates near the given variants
+  
+  plyr::ddply(variant_query,plyr::.(CHR),function(variants_in_chr){
+    
+    chunk_size_limit=100 # must be smaller than 1000
+    
+    split_query <-cluster_loci(variants_in_chr$POS,candidate_distance)  
+    
+    variants_in_chr_chunked <- merge(split_query,variants_in_chr)
+    
+    plyr::ddply(variants_in_chr_chunked,plyr::.(cluster),function(variants_in_chr_chunk){
+    candidate_variants = extract_snps_from_bgzip(outcome = variant_candidates_file,
+                            snps = variants_in_chr_chunk,
+                            mapping_function = mapping_function,
+                            comment_char = comment_char,
+                            validate = validate,
+                            pad = candidate_distance)
+    
+    filtered_candidate_variants <- subset(candidate_variants, EA %in% valid_alleles & NEA %in% valid_alleles & !is.na(rsid) )
+    
+    indexed_variants <- seq(nrow(candidate_variants))
+    chunks <- split(indexed_variants,indexed_variants%/%(chunk_size_limit-nrow(variants_in_chr_chunk)))
+    
+    
+    plyr::ldply(chunks,function(indexes) { 
+      candidate_variants <- rbind(variants_in_chr_chunk %>%
+                                    dplyr::select(rsid,CHR,POS), candidate_variants[indexes,] %>%
+                                    dplyr::select(rsid,CHR,POS)) %>%
+        subset(!is.na(rsid)) %>%
+        unique()
+    
+      # get the LD matrix for the original variants and the candidates
+      
+        pairs <- get_LD_pairs(candidate_variants, 
+                              token = token, 
+                              pop=population)
+        
+        if(nrow(pairs)==0){
+          return(NULL)
+        }
+        return(pairs%>%subset(RS_number %in% variants_in_chr_chunk$rsid)%>%subset(value>=r2_threshold))
+        })
+    })
+  })
+}
+
+
+
 #' Gets the LD between all the pairs of snps (that are in the same contig) from the set provided by
 #' the input dataframe
 #' 
 #' @name get_LD_pairs
 #' 
-#' @param rsids_and_chr is a dataframe that contains (at least) the following two columns: CHR, rsid
+#' @param rsids_and_var is a dataframe that contains (at least) the following  columns: CHR, POS, and rsid
 #' @param pop the population codes (or vector thereof) in which the LD is calculated e.g. c("CEU"), c("CEU","YRI")
 #' @param token is an access token to the nci API.
 #' if you don't have a token go here: https://ldlink.nci.nih.gov/?tab=apiaccess
+#' @param position_distance_cutoff The largest distance between neighboring variants that would 
+#' be queried for LD. variants with larger distance could still be queried if there's a variant between
+#' them that "links" them.
 #'
 #'
 #' @return a dataframe containing the following columns: CHR, RS_number, variable, value where
@@ -174,12 +257,24 @@ get_proxies <-
 #'    get_LD_pairs(data.frame(CHR="chr9", 
 #'                            rsid=c("rs10760259","rs635634")),
 #'                            pop=c("CEU"), 
-#'                            token=Sys.getenv("LDLINK_TOKEN"))
+#'                            token=Sys.getenv("LD_LINK_TOKEN"))
+#'    get_LD_pairs(data.frame(CHR=c("chr9","chr10"), 
+#'                            rsid=c("rs10760259","rs7899632")),
+#'                            pop=c("CEU"), 
+#'                            token=Sys.getenv("LD_LINK_TOKEN"))
+
+#'    get_LD_pairs(data.frame(CHR="chr9", 
+#'                            rsid=c("rs635634")),
+#'                            pop=c("CEU"), 
+#'                            token=Sys.getenv("LD_LINK_TOKEN"))
+
 #' }
 #'
-get_LD_pairs <- function(rsids_and_chr, pop, token) {
+#'
+get_LD_pairs <- function(rsids_and_chr, pop, token, position_distance_cutoff=500000) {
   assert_rsids(rsids_and_chr)
   assert_chr(rsids_and_chr)
+  
   assertthat::assert_that(
     nchar(token) > 1,
     msg = glue::glue(
@@ -188,13 +283,17 @@ get_LD_pairs <- function(rsids_and_chr, pop, token) {
   )
   CHR <- NULL
   # call LD matrix per each chromosome
-  plyr::ddply(rsids_and_chr, .progress = if(interactive()){"text"} else {"none"}, .variables = "CHR", function(x) {
-    if (nrow(x) > 1) {
-      suppressMessages(LDlinkR::LDmatrix(x$rsid, pop = pop, token, r2d = "r2") %>%
-        reshape2::melt(id.vars = "RS_number"))
+  plyr::ddply(rsids_and_chr, .variables = "CHR", function(y) {
+      
+    show(glue::glue("on CHR={y[1,'CHR']}, size={nrow(y)}"))
+    if (nrow(y) > 1) {
+      
+      suppressMessages(LDlinkR::LDmatrix(y$rsid, pop = pop, token, r2d = "r2") %>%
+                         reshape2::melt(id.vars = "RS_number"))
     } else {
-      temp <- data.frame(RS_number = as.character(x$rsid[1]), X = 1)
-      names(temp)[2] <- as.character(x$rsid[1])
+      # show("No rows.")
+      temp <- data.frame(RS_number = as.character(y$rsid[1]), X = 1)
+      names(temp)[2] <- as.character(y$rsid[1])
       temp %>% reshape2::melt(id.vars = "RS_number")
     }
   })
@@ -396,7 +495,8 @@ fix_proxy_alleles <- function(proxies, reverse_direction = FALSE) {
                     reverse_direction) %>%
     {
       data.frame(EA  = .[1],
-                 NEA = .[2])
+                 NEA = .[2],
+                 Alleles = sort(.)%>%paste(sep="/",collapse = "/"))
     }
   })
   
