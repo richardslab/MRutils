@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 
-#!/usr/bin/env Rscript
+
 args <- commandArgs(trailingOnly=TRUE)
 # test if there is at least one argument: if not, return an error
 if (length(args)==0) {
