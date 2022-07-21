@@ -89,7 +89,7 @@ jobs:
       -
         name: Find installed R packags
         run: |
-          conda run -n MRutils Rscript -e "installed.packages\(\)"
+          conda run -n MRutils Rscript -e "installed.packages()"
       -
         name: Restore packages
         env: 
