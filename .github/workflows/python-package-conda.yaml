@@ -106,7 +106,7 @@ jobs:
       - 
         name: post conda steps
         run: |
-          conda run -n MRutils Rscript installation/post_conda_steps.R MRutils 
+          conda run -n MRutils Rscript installation/post_conda_steps.R $(readlink -f .)
       - 
         name: Setup tmate session
         if: ${{ failure() }}
