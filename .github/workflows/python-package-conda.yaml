@@ -87,24 +87,28 @@ jobs:
           conda config --show
           printenv | sort
       -
-        name: Find installed R packags
+        name: Find installed R packages
         run: |
           conda run -n MRutils Rscript -e "installed.packages()"
           echo "done."
-      # -
-      #   name: Restore packages
-      #   env: 
-      #     command: |
-      #       if (!requireNamespace("renv", quietly = FALSE)){
-      #         cat("Installing renv from CRAN.")
-      #         install.packages("renv", repos = "http://cran.us.r-project.org")
-      #       }
-      #       cat("Restoring the renv environment.\n")
-      #       renv::restore()
-      #   run: |
-      #     conda run -n MRutils Rscript -e '${{ env.command }}'
-
-      - name: Setup tmate session
+      -
+        name: Restore packages
+        env: 
+          command: |
+            if (!requireNamespace("renv", quietly = FALSE)){
+              cat("Installing renv from CRAN.")
+              install.packages("renv", repos = "http://cran.us.r-project.org")
+            }
+            # cat("Restoring the renv environment.\n")
+            # renv::restore()
+        run: |
+          conda run -n MRutils Rscript -e '${{ env.command }}'
+      - 
+        name: post conda steps
+        run: |
+          conda run -n MRUtils Rscript installation/post_conda_steps.R MRutils 
+      - 
+        name: Setup tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
