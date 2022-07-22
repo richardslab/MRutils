@@ -99,8 +99,8 @@ jobs:
               cat("Installing renv from CRAN.")
               install.packages("renv", repos = "http://cran.us.r-project.org")
             }
-            # cat("Restoring the renv environment.\n")
-            # renv::restore()
+#           cat("Restoring the renv environment.\n")
+#           renv::restore()
         run: |
           conda run -n MRutils Rscript -e '${{ env.command }}'
       - 
