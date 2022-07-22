@@ -91,18 +91,18 @@ jobs:
         run: |
           conda run -n MRutils Rscript -e "installed.packages()"
           echo "done."
-      -
-        name: Restore packages
-        env: 
-          command: |
-            if (!requireNamespace("renv", quietly = FALSE)){
-              cat("Installing renv from CRAN.")
-              install.packages("renv", repos = "http://cran.us.r-project.org")
-            }
-            cat("Restoring the renv environment.\n")
-            renv::restore()
-        run: |
-          conda run -n MRutils Rscript -e '${{ env.command }}'
+      # -
+      #   name: Restore packages
+      #   env: 
+      #     command: |
+      #       if (!requireNamespace("renv", quietly = FALSE)){
+      #         cat("Installing renv from CRAN.")
+      #         install.packages("renv", repos = "http://cran.us.r-project.org")
+      #       }
+      #       cat("Restoring the renv environment.\n")
+      #       renv::restore()
+      #   run: |
+      #     conda run -n MRutils Rscript -e '${{ env.command }}'
 
       - name: Setup tmate session
         if: ${{ failure() }}
