@@ -11,7 +11,8 @@ project_root <- args[1]
 
 cat("project is", project_root,"\n")
 
-packages_to_install <- c("dplyr","ggplot2","argparse","tidyverse","LDlinkR","openxlsx","mgsub","validate","testthat")
+packages_to_install <- c("dplyr","ggplot2","argparse","tidyverse","LDlinkR","openxlsx","mgsub","validate", "testthat")
+packages_needed_for_dev <- c("devtools")
 
 cat("RNV init")
   renv::init(project=project_root, restart=TRUE, force=TRUE)
@@ -25,8 +26,8 @@ for (package in packages_to_install){
 cat("RNV install github")
 renv::install(project=project_root, "MRCIEU/TwoSampleMR")
 
-cat("RNV hydrate")
-renv::hydrate(project=project_root)
+# cat("RNV hydrate")
+# renv::hydrate(project=project_root)
 
 cat("RNV snapshot")
 renv::snapshot(project=project_root, directory="R")
