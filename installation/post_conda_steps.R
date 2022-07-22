@@ -17,7 +17,8 @@ cat("RNV init")
   renv::init(project=project_root, restart=TRUE, force=TRUE)
 
 cat("RNV install packages")
-for (pacakge in packages_to_install){
+for (package in packages_to_install){
+  cat("installing: ", package)
   renv::install(project=project_root, package)
 }
 
