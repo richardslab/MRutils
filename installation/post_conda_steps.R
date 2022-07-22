@@ -11,7 +11,7 @@ project_root <- args[1]
 
 cat("project is", project_root,"\n")
 
-packages_to_install <- c("dplyr","ggplot2","argparse","tidyverse","LDlinkR","devtools","openxlsx","mgsub","validate","testthat")
+packages_to_install <- c("dplyr","ggplot2","argparse","tidyverse","LDlinkR","openxlsx","mgsub","validate","testthat")
 
 cat("RNV init")
   renv::init(project=project_root, restart=TRUE, force=TRUE)
