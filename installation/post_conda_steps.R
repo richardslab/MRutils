@@ -26,8 +26,8 @@ for (package in packages_to_install){
 cat("R-ENV install github TwoSampleMr\n")
 renv::install(project=project_root, "MRCIEU/TwoSampleMR")
 
-cat("RNV hydrate")
-renv::hydrate(project=project_root)
+# cat("RNV hydrate")
+# renv::hydrate(project=project_root)
 
-cat("R-ENV snapshot\n")
-renv::snapshot(project=project_root, directory="R")
+# cat("R-ENV snapshot\n")
+# renv::snapshot(project=project_root, directory="R")
