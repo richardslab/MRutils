@@ -119,6 +119,7 @@ jobs:
         id: packages
         env: 
           command: |
+            
             if (!requireNamespace("devtools", quietly = TRUE)){ 
               cat("Package devtools not available, installing from CRAN.\n")
               install.packages("devtools", repos = "http://cran.us.r-project.org")
